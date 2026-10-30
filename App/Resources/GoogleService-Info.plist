@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyBEtKIsaPzF5V0yQ5YSgz3_H98ckPDxoPw</string>
+	<key>GCM_SENDER_ID</key>
+	<string>46013374733</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.lfaz.centrodedatos</string>
+	<key>PROJECT_ID</key>
+	<string>basededatos-29c60</string>
+	<key>STORAGE_BUCKET</key>
+	<string>basededatos-29c60.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:46013374733:ios:7952559f29c268589d1044</string>
+	<key>DATABASE_URL</key>
+	<string>https://basededatos-29c60-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>
