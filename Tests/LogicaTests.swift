@@ -104,6 +104,7 @@ final class DiferenciasTests: XCTestCase {
     }
 }
 
+@MainActor
 final class ReglasTests: XCTestCase {
     func testNormalizarNombre() {
         XCTAssertEqual(normalizarNombre("  María  José PÉREZ "), "maria jose perez")
