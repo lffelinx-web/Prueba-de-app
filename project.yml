@@ -8,16 +8,19 @@ settings:
     SWIFT_VERSION: '5.0'
     SWIFT_STRICT_CONCURRENCY: minimal
     TARGETED_DEVICE_FAMILY: '1'
-    MARKETING_VERSION: '1.0.0'
+    MARKETING_VERSION: '2.0.0'
     CURRENT_PROJECT_VERSION: '1'
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: YES
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: 11.0.0
 targets:
   CentroDeDatos:
     type: application
     platform: iOS
     sources:
-      # Web/index.html is the original web app, copied into the bundle as-is.
       - path: App
         excludes:
           - Info.plist
@@ -26,11 +29,28 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.lfaz.centrodedatos
         INFOPLIST_FILE: App/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         GENERATE_INFOPLIST_FILE: NO
+        OTHER_LDFLAGS: [-ObjC]
     dependencies:
-      - sdk: WebKit.framework
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseDatabase
+  CentroDeDatosTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: CentroDeDatos
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   CentroDeDatos:
     build:
       targets:
         CentroDeDatos: all
+        CentroDeDatosTests: [test]
+    test:
+      targets: [CentroDeDatosTests]

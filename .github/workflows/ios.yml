@@ -11,24 +11,29 @@ concurrency:
 jobs:
   build:
     runs-on: macos-26-intel
-    timeout-minutes: 30
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
+      - name: Caché de paquetes Swift
+        uses: actions/cache@v4
+        with:
+          path: SourcePackages
+          key: spm-${{ hashFiles('project.yml') }}
       - name: Instalar XcodeGen
         run: brew install xcodegen
       - name: Generar proyecto
         run: xcodegen generate
-      - name: Compilar para simulador
+      - name: Probar en simulador
         shell: bash
         run: |
           set -o pipefail
-          xcodebuild -project CentroDeDatos.xcodeproj -scheme CentroDeDatos -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build-sim CODE_SIGNING_ALLOWED=NO build
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for group in d["devices"].values() for v in group if v["name"].startswith("iPhone")))')
+          xcodebuild -project CentroDeDatos.xcodeproj -scheme CentroDeDatos -destination "platform=iOS Simulator,id=$DEVICE" -derivedDataPath build-tests -clonedSourcePackagesDirPath SourcePackages -skipMacroValidation -resultBundlePath TestResults.xcresult CODE_SIGNING_ALLOWED=NO test
       - name: Compilar IPA sin firmar
         shell: bash
         run: |
           set -o pipefail
-          xcodebuild -project CentroDeDatos.xcodeproj -scheme CentroDeDatos -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
-          test -f build/Build/Products/Release-iphoneos/CentroDeDatos.app/index.html
+          xcodebuild -project CentroDeDatos.xcodeproj -scheme CentroDeDatos -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build -clonedSourcePackagesDirPath SourcePackages -skipMacroValidation CODE_SIGNING_ALLOWED=NO build
           mkdir -p entrega/Payload
           cp -R build/Build/Products/Release-iphoneos/CentroDeDatos.app entrega/Payload/
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' entrega/Payload/CentroDeDatos.app/Info.plist)
@@ -37,6 +42,12 @@ jobs:
         with:
           name: Centro-de-datos-sin-firmar
           path: entrega/*.ipa
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Resultados-XCTest
+          path: TestResults.xcresult
+          if-no-files-found: ignore
   testflight:
     needs: build
     if: github.ref == 'refs/heads/main'

@@ -1,0 +1,519 @@
+import SwiftUI
+
+struct BaseDatosView: View {
+    @EnvironmentObject private var store: Store
+
+    private let columnas = [GridItem(.adaptive(minimum: 150), spacing: 12)]
+
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: columnas, spacing: 12) {
+                ForEach(Categoria.allCases) { categoria in
+                    NavigationLink(value: Ruta.categoria(categoria)) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Image(systemName: categoria.icono)
+                                .font(.title2)
+                                .foregroundStyle(color(categoria))
+                            Text(categoria.titulo)
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+                            Text("\(Reglas.conteo(categoria, en: store.clientes)) reg.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding()
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("Base de datos")
+        .conNotificaciones()
+        .overlay {
+            if !store.clientesCargados { ProgressView() }
+        }
+    }
+
+    private func color(_ categoria: Categoria) -> Color {
+        switch categoria {
+        case .activos: return .accentColor
+        case .sinrenovar: return Paleta.doble
+        case .prospectos: return .teal
+        case .prAprobadas: return Paleta.exito
+        case .prRechazadas: return Paleta.peligro
+        case .fraude: return Paleta.advertencia
+        }
+    }
+}
+
+/// Forms opened from lists and details.
+enum Formulario: Identifiable {
+    case activo(String?)
+    case prospecto(String?)
+    case pr(Categoria, String?)
+    case fraude(String?)
+    case seguimiento(String)
+
+    var id: String {
+        switch self {
+        case .activo(let id): return "activo-" + (id ?? "nuevo")
+        case .prospecto(let id): return "prospecto-" + (id ?? "nuevo")
+        case .pr(let categoria, let id): return "pr-\(categoria.rawValue)-" + (id ?? "nuevo")
+        case .fraude(let id): return "fraude-" + (id ?? "nuevo")
+        case .seguimiento(let id): return "seguimiento-" + id
+        }
+    }
+
+    static func editar(_ c: Cliente) -> Formulario? {
+        switch c.categoria {
+        case .activos?, .sinrenovar?: return .activo(c.id)
+        case .prospectos?: return .prospecto(c.id)
+        case .prAprobadas?, .prRechazadas?: return .pr(c.categoria!, c.id)
+        case .fraude?: return .fraude(c.id)
+        case nil: return nil
+        }
+    }
+
+    static func nuevo(_ categoria: Categoria) -> Formulario? {
+        switch categoria {
+        case .activos: return .activo(nil)
+        case .prospectos: return .prospecto(nil)
+        case .prAprobadas, .prRechazadas: return .pr(categoria, nil)
+        case .fraude: return .fraude(nil)
+        case .sinrenovar: return nil
+        }
+    }
+}
+
+extension View {
+    func formularios(_ formulario: Binding<Formulario?>) -> some View {
+        sheet(item: formulario) { formulario in
+            Group {
+                switch formulario {
+                case .activo(let id): FormularioActivo(clienteId: id)
+                case .prospecto(let id): FormularioProspecto(clienteId: id)
+                case .pr(let categoria, let id): FormularioPR(categoria: categoria, clienteId: id)
+                case .fraude(let id): FormularioFraude(clienteId: id)
+                case .seguimiento(let id): FormularioSeguimiento(clienteId: id)
+                }
+            }
+            .capaDeEstado()
+        }
+    }
+}
+
+struct CategoriaView: View {
+    @EnvironmentObject private var store: Store
+    let categoria: Categoria
+
+    @State private var busqueda = ""
+    @State private var filtros = Filtros()
+    @State private var mostrarFiltros = false
+    @State private var formulario: Formulario?
+    @State private var confirmacion: Confirmacion?
+    @State private var revision: Reglas.Duplicado?
+
+    var body: some View {
+        let lista = Reglas.lista(categoria, en: store.clientes, busqueda: busqueda, filtros: filtros)
+        let duplicados = Reglas.duplicados(categoria, en: store.clientes)
+
+        List {
+            if !duplicados.isEmpty {
+                Section {
+                    ForEach(duplicados) { par in
+                        HStack {
+                            Text("⚠️ " + par.mensaje).font(.footnote)
+                            Spacer()
+                            Button("Revisar") { revision = par }
+                                .buttonStyle(.bordered)
+                                .tint(Paleta.advertencia)
+                        }
+                    }
+                }
+            }
+            if lista.isEmpty {
+                ContentUnavailableView(busqueda.isEmpty ? "Sin registros" : "Sin resultados", systemImage: categoria.icono)
+                    .listRowBackground(Color.clear)
+            }
+            ForEach(lista) { c in
+                NavigationLink(value: Ruta.cliente(c.id)) {
+                    FilaCliente(cliente: c)
+                }
+                .swipeActions(edge: .trailing) {
+                    if store.esAdmin {
+                        Button(role: .destructive) {
+                            confirmarEliminar(c)
+                        } label: {
+                            Label("Eliminar", systemImage: "trash")
+                        }
+                        if let editar = Formulario.editar(c) {
+                            Button {
+                                formulario = editar
+                            } label: {
+                                Label("Editar", systemImage: "pencil")
+                            }
+                            .tint(.accentColor)
+                        }
+                    }
+                }
+                .swipeActions(edge: .leading) {
+                    if store.esAdmin, categoria == .sinrenovar {
+                        Button {
+                            confirmarSuspension(c)
+                        } label: {
+                            Label(c.suspendido ? "Reactivar" : "Suspender", systemImage: c.suspendido ? "play.fill" : "pause.fill")
+                        }
+                        .tint(Paleta.advertencia)
+                    }
+                    if store.esAdmin, [.prospectos, .prAprobadas].contains(categoria) {
+                        Button {
+                            formulario = .seguimiento(c.id)
+                        } label: {
+                            Label("Seguimiento", systemImage: "list.clipboard")
+                        }
+                        .tint(Paleta.doble)
+                    }
+                }
+            }
+        }
+        .navigationTitle(categoria.titulo)
+        .searchable(text: $busqueda, prompt: "Buscar nombre, teléfono, SL o PR")
+        .autocorrectionDisabled()
+        .textInputAutocapitalization(.never)
+        .toolbar {
+            if Filtros.filtrables.contains(categoria) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        mostrarFiltros = true
+                    } label: {
+                        Label("Filtros", systemImage: filtros.cantidad > 0 ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                    }
+                }
+            }
+            if store.esAdmin, let nuevo = Formulario.nuevo(categoria) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        formulario = nuevo
+                    } label: {
+                        Label("Agregar", systemImage: "plus")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $mostrarFiltros) {
+            FiltrosView(categoria: categoria, filtros: $filtros)
+        }
+        .sheet(item: $revision) { par in
+            RevisionDuplicadoView(idA: par.a.id, idB: par.b.id)
+                .capaDeEstado()
+        }
+        .formularios($formulario)
+        .confirmacion($confirmacion)
+    }
+
+    private func confirmarEliminar(_ c: Cliente) {
+        let refs = [.activos, .sinrenovar, .fraude].contains(c.categoria) && store.tieneReferenciasVinculadas(c.id)
+        var mensaje = "¿Eliminar \(c.nombre)?"
+        if refs { mensaje += " Sus referencias vinculadas también serán eliminadas." }
+        if c.dobleFinId != nil { mensaje += " El vínculo de doble financiamiento también se eliminará." }
+        confirmacion = Confirmacion(titulo: "Eliminar registro", mensaje: mensaje, boton: "Eliminar", destructivo: true) {
+            await store.eliminar(c.id)
+        }
+    }
+
+    private func confirmarSuspension(_ c: Cliente) {
+        confirmacion = Confirmacion(
+            titulo: c.suspendido ? "Reactivar cliente" : "Suspender cliente",
+            mensaje: c.suspendido
+                ? "¿Reactivar a \(c.nombre)? Volverá a aparecer en mensajes y recordatorios."
+                : "¿Suspender a \(c.nombre)? No aparecerá en mensajes, recordatorios ni listas mientras esté suspendido.",
+            boton: c.suspendido ? "Reactivar" : "Suspender"
+        ) {
+            await store.alternarSuspension(c.id)
+        }
+    }
+}
+
+/// One card in a category list, with what matters for that category.
+struct FilaCliente: View {
+    @EnvironmentObject private var store: Store
+    let cliente: Cliente
+
+    var body: some View {
+        let c = cliente
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(c.nombre)
+                    .font(.headline)
+                    .foregroundStyle(c.inhabilitado ? .secondary : .primary)
+                if c.dobleFinId != nil, c.categoria == .activos { Etiqueta("2 créditos", color: Paleta.doble) }
+                Spacer()
+                etiquetas
+            }
+            switch c.categoria {
+            case .activos?:
+                linea("phone", c.tel, derecha: c.sl, mono: true)
+                linea("calendar", "Compra: \(Fecha.corta(c.fechaCompra))", derecha: Dinero.texto(c.macropesos), colorDerecha: Paleta.macro)
+            case .sinrenovar?:
+                linea("phone", c.tel, derecha: c.sl, mono: true)
+                linea("person", c.asesor ?? "—", derecha: "Vence: \(Fecha.corta(c.fechaFin))")
+                if let pr = Reglas.prAdjuntaActiva(c) {
+                    Text("📋 \(pr["numPR"]?.text ?? "—") · \(pr["tipocred"]?.text ?? "—")")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                }
+            case .prospectos?:
+                if !c.inhabilitado {
+                    linea("phone", c.tel, derecha: c.origen ?? "Manual")
+                    linea("calendar", "Ref.: \(Fecha.corta(c.fechaRef))", derecha: c.asesor ?? "—")
+                }
+            case .prAprobadas?, .prRechazadas?:
+                linea("phone", c.tel, derecha: c.numPR, mono: true)
+                let restantes = diasRestantesPR(c)
+                linea("person", c.asesor ?? "—", derecha: "\(restantes)d restantes", colorDerecha: restantes <= 5 ? Paleta.peligro : .secondary)
+                linea("calendar", "Solicitud: \(Fecha.corta(c.fechaSolicitud))", derecha: c.tipocred)
+                if let detalles = c.detallesPR {
+                    Text("📝 " + detalles).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                }
+            case .fraude?:
+                linea("phone", c.tel.isEmpty ? "Sin tel." : c.tel, derecha: c.sl, mono: true)
+                linea("calendar", Fecha.corta(c.fechaCompra), derecha: c.tipo)
+            case nil:
+                EmptyView()
+            }
+        }
+        .padding(.vertical, 2)
+        .listRowBackground(fondo)
+    }
+
+    private var fondo: Color? {
+        let c = cliente
+        if c.categoria == .sinrenovar, c.suspendido { return Paleta.advertencia.opacity(0.08) }
+        if (c.categoria == .activos || c.categoria == .prospectos), enAtraso { return Paleta.advertencia.opacity(0.1) }
+        return nil
+    }
+
+    private var otroCredito: Cliente? { store.cliente(cliente.dobleFinId) }
+
+    private var enAtraso: Bool {
+        cliente.estatus == .atraso || (cliente.categoria == .activos && otroCredito?.estatus == .atraso)
+    }
+
+    @ViewBuilder
+    private var etiquetas: some View {
+        let c = cliente
+        switch c.categoria {
+        case .activos?:
+            if otroCredito?.estatus == .atraso, c.estatus != .atraso {
+                Etiqueta("Otro en atraso", color: Paleta.advertencia)
+            } else {
+                EtiquetaEstatus(estatus: c.estatus)
+            }
+        case .sinrenovar?:
+            if c.suspendido {
+                Etiqueta("⏸ Suspendido", color: Paleta.advertencia)
+            } else if let pr = Reglas.prAdjuntaActiva(c) {
+                pr["estatus"]?.text == "aprobada" ? Etiqueta("Con PR aprobada", color: Paleta.exito) : Etiqueta("Con PR rechazada", color: Paleta.peligro)
+            } else {
+                Etiqueta("Sin renovar", color: Paleta.doble)
+            }
+        case .prospectos?:
+            if c.inhabilitado {
+                Etiqueta("Inhabilitado")
+            } else {
+                HStack(spacing: 4) {
+                    if c.verificado { Etiqueta("✓", color: Paleta.exito) }
+                    if c.esPRAprobada { Etiqueta("PR aprobada", color: Paleta.exito) }
+                    if c.seguimiento != nil { Etiqueta("Seg.", color: Paleta.doble) }
+                    if c.estatus == .atraso { Etiqueta("Atraso", color: Paleta.advertencia) }
+                }
+            }
+        case .prAprobadas?:
+            Etiqueta("Aprobada", color: Paleta.exito)
+        case .prRechazadas?:
+            Etiqueta("Rechazada", color: Paleta.peligro)
+        case .fraude?:
+            Etiqueta("Fraude", color: Paleta.peligro)
+        case nil:
+            EmptyView()
+        }
+    }
+
+    private func diasRestantesPR(_ c: Cliente) -> Int {
+        let base = Fecha.dia(c.fechaSolicitud) ?? Fecha.dia(c.fechaIngresoPR)
+        let dias = base.map { Fecha.dias(desde: $0, hasta: Fecha.hoy) } ?? 0
+        return (c.categoria == .prAprobadas ? 30 : 90) - dias
+    }
+
+    private func linea(_ icono: String, _ texto: String, derecha: String? = nil, mono: Bool = false, colorDerecha: Color = .secondary) -> some View {
+        HStack {
+            Label(texto.isEmpty ? "—" : texto, systemImage: icono)
+            Spacer()
+            if let derecha {
+                Text(derecha)
+                    .font(mono ? .caption.monospaced() : .caption)
+                    .foregroundStyle(mono ? Color.accentColor : colorDerecha)
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+}
+
+struct FiltrosView: View {
+    @EnvironmentObject private var store: Store
+    @Environment(\.dismiss) private var dismiss
+    let categoria: Categoria
+    @Binding var filtros: Filtros
+    @State private var borrador = Filtros()
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Picker("Asesor", selection: $borrador.asesor) {
+                    Text("Todos").tag("")
+                    ForEach(store.asesores, id: \.self) { Text($0).tag($0) }
+                }
+                switch categoria {
+                case .prospectos:
+                    Picker("Tipo", selection: $borrador.tipoProspecto) {
+                        Text("Todos").tag("")
+                        Text("PR aprobada").tag("pr-aprobada")
+                        Text("Prospecto normal").tag("normal")
+                    }
+                    Picker("Verificación", selection: $borrador.verificado) {
+                        Text("Todos").tag("")
+                        Text("Verificados").tag("si")
+                        Text("No verificados").tag("no")
+                    }
+                    Picker("WhatsApp", selection: $borrador.whatsapp) {
+                        Text("Todos").tag("")
+                        Text("Con WhatsApp").tag("si")
+                        Text("Sin WhatsApp").tag("no")
+                    }
+                    rango("Fecha ref.", desde: $borrador.fechaDesde, hasta: $borrador.fechaHasta)
+                case .prAprobadas:
+                    Picker("Tipo", selection: $borrador.tipocred) {
+                        Text("Todos").tag("")
+                        ForEach(Catalogos.tiposPR, id: \.self) { Text($0).tag($0) }
+                    }
+                    rango("Fecha solicitud", desde: $borrador.fechaDesde, hasta: $borrador.fechaHasta)
+                default:
+                    Picker("Tipo de crédito", selection: $borrador.tipo) {
+                        Text("Todos").tag("")
+                        ForEach(Catalogos.tiposCredito, id: \.self) { Text($0).tag($0) }
+                    }
+                    Picker("Plazo (semanas)", selection: $borrador.plazo) {
+                        Text("Todos").tag("")
+                        ForEach(Catalogos.plazos, id: \.self) { Text($0).tag($0) }
+                    }
+                    Picker("Estatus", selection: $borrador.estatus) {
+                        Text("Todos").tag("")
+                        Text("Al corriente").tag(Estatus.alCorriente.rawValue)
+                        Text("En atraso").tag(Estatus.atraso.rawValue)
+                    }
+                    rango("F. compra", desde: $borrador.compraDesde, hasta: $borrador.compraHasta)
+                    rango("F. vencimiento", desde: $borrador.venceDesde, hasta: $borrador.venceHasta)
+                    Section("Macropesos") {
+                        TextField("Mínimo ($)", text: $borrador.macroMin).keyboardType(.decimalPad)
+                        TextField("Máximo ($)", text: $borrador.macroMax).keyboardType(.decimalPad)
+                    }
+                }
+            }
+            .navigationTitle("Filtros")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Limpiar") {
+                        filtros = Filtros()
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Aplicar") {
+                        filtros = borrador
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear { borrador = filtros }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private func rango(_ titulo: String, desde: Binding<Date?>, hasta: Binding<Date?>) -> some View {
+        Section(titulo) {
+            FechaOpcional(titulo: "Desde", fecha: desde)
+            FechaOpcional(titulo: "Hasta", fecha: hasta)
+        }
+    }
+}
+
+/// A date that can be left empty.
+struct FechaOpcional: View {
+    let titulo: String
+    @Binding var fecha: Date?
+
+    var body: some View {
+        if let valor = fecha {
+            HStack {
+                DatePicker(titulo, selection: Binding(get: { valor }, set: { fecha = $0 }), displayedComponents: .date)
+                Button {
+                    fecha = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+            }
+        } else {
+            Button {
+                fecha = Fecha.hoy
+            } label: {
+                LabeledContent(titulo) { Text("Cualquiera").foregroundStyle(.secondary) }
+            }
+            .foregroundStyle(.primary)
+        }
+    }
+}
+
+/// Two prospects that look like the same person; disable one of them.
+struct RevisionDuplicadoView: View {
+    @EnvironmentObject private var store: Store
+    @Environment(\.dismiss) private var dismiss
+    let idA: String
+    let idB: String
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach([idA, idB], id: \.self) { id in
+                    if let c = store.cliente(id) {
+                        Section {
+                            FilaDato("Teléfono", c.tel)
+                            FilaDato("Fecha ref.", c.fechaRef)
+                            FilaDato("Asesor", c.asesor ?? "Sin asesor")
+                            FilaDato("Referencia de", store.cliente(c.refDeId)?.nombre)
+                            FilaDato("Origen", c.origen ?? "Manual")
+                            if store.esAdmin {
+                                Button(c.inhabilitado ? "Reactivar" : "Inhabilitar este", role: c.inhabilitado ? nil : .destructive) {
+                                    Task { await store.cambiarInhabilitado(id, !c.inhabilitado) }
+                                }
+                            }
+                        } header: {
+                            Text(c.nombre + (c.inhabilitado ? " (inhabilitado)" : ""))
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Posible duplicado")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Listo") { dismiss() } }
+            }
+        }
+    }
+}
