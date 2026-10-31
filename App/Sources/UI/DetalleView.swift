@@ -124,7 +124,7 @@ struct DetalleView: View {
                 }
                 if c.inhabilitado { Etiqueta("Inhabilitado") }
                 if c.suspendido { Etiqueta("Suspendido", color: Tema.advertencia) }
-                if let folio = c.sl ?? c.numPR { ChipSL(folio) }
+                if let folio = c.sl ?? c.numPR { ChipCopiable(texto: folio, etiqueta: c.sl != nil ? "SL" : "PR") }
             }
             HStack(spacing: 8) {
                 accionRapida("Llamar", icono: "phone.fill", fondo: Tema.acento.opacity(0.12), texto: Tema.acento) {
@@ -289,6 +289,7 @@ struct DetalleView: View {
                     campo("Asesor", c.asesor)
                     campo("Tipo", c.tipo)
                     campo("Plazo", c.semanas.map { "\($0) semanas" })
+                    campo("Día de pago", diaDePago(c))
                     campo("Compra", Fecha.corta(c.fechaCompra))
                     campo("Termina", Fecha.corta(c.fechaFin))
                     if c.categoria == .fraude { campo("Notas", c.notas) }
@@ -315,7 +316,6 @@ struct DetalleView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("CURP").font(.system(size: 11, weight: .semibold)).tracking(0.6).foregroundStyle(Tema.apagado)
                         Text(curp).font(.system(size: 13, weight: .semibold, design: .monospaced)).foregroundStyle(Tema.texto).textSelection(.enabled)
-                        Text("QR listo para escanear").font(Tipo.detalle).foregroundStyle(Tema.apagado)
                     }
                     Spacer(minLength: 0)
                 }
@@ -335,6 +335,15 @@ struct DetalleView: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    /// Weekly payments fall on the weekday the credit started.
+    private func diaDePago(_ c: Cliente) -> String? {
+        guard let inicio = c.inicioCredito else { return nil }
+        let formato = DateFormatter()
+        formato.locale = Locale(identifier: "es_MX")
+        formato.dateFormat = "EEEE"
+        return formato.string(from: inicio).capitalizedFirst
     }
 
     private func filaEnlace(_ titulo: String, _ valor: String) -> some View {

@@ -4,24 +4,40 @@ struct BaseDatosView: View {
     @EnvironmentObject private var store: Store
     @State private var busqueda = ""
 
+    @State private var buscadorOculto = false
+
+    /// The search field sits above the summary and starts scrolled out of view;
+    /// pulling the list down reveals it, like Mail or Notes.
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                buscador
-                if busqueda.trimmingCharacters(in: .whitespaces).isEmpty {
-                    resumen.padding(.top, 14)
-                    grupo("Cartera", [.activos, .sinrenovar])
-                    grupo("Captación", [.prospectos, .prAprobadas, .prRechazadas])
-                    grupo("Riesgo", [.fraude])
-                } else {
-                    resultados
+        GeometryReader { geo in
+            ScrollViewReader { lector in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        buscador
+                            .padding(.top, 14)
+                        Color.clear.frame(height: 14).id("inicio")
+                        if busqueda.trimmingCharacters(in: .whitespaces).isEmpty {
+                            resumen
+                            grupo("Cartera", [.activos, .sinrenovar])
+                            grupo("Captación", [.prospectos, .prAprobadas, .prRechazadas])
+                            grupo("Riesgo", [.fraude])
+                        } else {
+                            resultados
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 24)
+                    // Always taller than the screen, so the field can stay hidden.
+                    .frame(minHeight: geo.size.height + 80, alignment: .top)
+                }
+                .scrollDismissesKeyboard(.immediately)
+                .onAppear {
+                    guard !buscadorOculto else { return }
+                    buscadorOculto = true
+                    DispatchQueue.main.async { lector.scrollTo("inicio", anchor: .top) }
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 14)
-            .padding(.bottom, 24)
         }
-        .scrollDismissesKeyboard(.immediately)
         .background(Tema.fondo)
         .conBarraSuperior()
         .overlay {

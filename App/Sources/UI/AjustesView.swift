@@ -163,14 +163,6 @@ struct AjustesView: View {
                 }
                 .seccionTema()
             }
-            Section("Mensajes") {
-                NavigationLink {
-                    PlantillasView()
-                } label: {
-                    Label("Plantillas de WhatsApp", systemImage: "text.bubble")
-                }
-            }
-            .seccionTema()
             if store.esAdmin {
                 Section("Administración") {
                     NavigationLink { UsuariosView() } label: { Label("Usuarios", systemImage: "person.badge.key") }

@@ -3,9 +3,12 @@ import SwiftUI
 /// Each user's WhatsApp templates, as in the web app's configuration.
 struct PlantillasView: View {
     @EnvironmentObject private var store: Store
+    var recordatorios = true
+    var mensajes = true
 
     var body: some View {
         List {
+            if recordatorios {
             Section("Recordatorios") {
                 ForEach(TipoRecordatorio.allCases) { tipo in
                     NavigationLink {
@@ -16,6 +19,8 @@ struct PlantillasView: View {
                 }
             }
             .seccionTema()
+            }
+            if mensajes {
             Section("Mensajes predeterminados") {
                 ForEach(CategoriaMensaje.conPlantilla) { categoria in
                     NavigationLink {
@@ -26,9 +31,10 @@ struct PlantillasView: View {
                 }
             }
             .seccionTema()
+            }
         }
         .fondoTema()
-        .navigationTitle("Plantillas")
+        .navigationTitle(recordatorios && mensajes ? "Plantillas" : recordatorios ? "Plantillas de recordatorios" : "Plantillas de mensajes")
         .navigationBarTitleDisplayMode(.inline)
     }
 

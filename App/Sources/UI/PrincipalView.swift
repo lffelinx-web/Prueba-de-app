@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct PrincipalView: View {
     @EnvironmentObject private var store: Store
@@ -36,6 +37,17 @@ extension View {
     }
 }
 
+/// Same 38 pt white circle for every top bar button.
+private struct CirculoBarra: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .frame(width: 38, height: 38)
+            .background(Tema.superficie, in: Circle())
+            .overlay(Circle().stroke(Tema.borde, lineWidth: 1))
+            .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+    }
+}
+
 private struct BarraSuperior: ViewModifier {
     @EnvironmentObject private var store: Store
     @State private var notificaciones = false
@@ -45,38 +57,22 @@ private struct BarraSuperior: ViewModifier {
         content
             .toolbar(.hidden, for: .navigationBar)
             .safeAreaInset(edge: .top, spacing: 0) {
-                HStack(spacing: 8) {
+                HStack(spacing: 10) {
                     Text("Centro de datos")
-                        .font(.system(size: 19, weight: .heavy))
+                        .font(.system(size: 20, weight: .heavy))
                         .foregroundStyle(Tema.acento)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
-                    Spacer(minLength: 4)
-                    if let usuario = store.usuario {
-                        HStack(spacing: 6) {
-                            Text(usuario.iniciales.prefix(1))
-                                .font(.system(size: 13, weight: .heavy))
-                                .foregroundStyle(.white)
-                                .frame(width: 30, height: 30)
-                                .background(Circle().fill(Tema.Seccion.azul).overlay(Circle().fill(LinearGradient(colors: [.white.opacity(0.35), .clear], startPoint: .topLeading, endPoint: .bottomTrailing))))
-                            Text(usuario.primerNombre)
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(Tema.texto)
-                                .lineLimit(1)
-                        }
-                    }
+                    Spacer(minLength: 8)
                     Button {
                         notificaciones = true
                     } label: {
                         let pendientes = store.notificacionesVisibles.filter { !$0.leida }.count
                         Image(systemName: pendientes > 0 ? "bell.badge.fill" : "bell.fill")
                             .symbolRenderingMode(.monochrome)
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(Tema.acento)
-                            .frame(width: 42, height: 42)
-                            .background(Tema.superficie, in: Circle())
-                            .overlay(Circle().stroke(Tema.borde, lineWidth: 1))
-                            .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+                            .modifier(CirculoBarra())
                             .overlay(alignment: .topTrailing) {
                                 if pendientes > 0 {
                                     Text(pendientes > 99 ? "99+" : "\(pendientes)")
@@ -86,7 +82,7 @@ private struct BarraSuperior: ViewModifier {
                                         .frame(minWidth: 18, minHeight: 18)
                                         .background(Tema.peligro, in: Capsule())
                                         .overlay(Capsule().stroke(Tema.superficie, lineWidth: 2))
-                                        .offset(x: 3, y: -3)
+                                        .offset(x: 4, y: -4)
                                 }
                             }
                     }
@@ -95,18 +91,29 @@ private struct BarraSuperior: ViewModifier {
                         ajustes = true
                     } label: {
                         Image(systemName: "gearshape.fill")
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(Tema.acento)
-                            .frame(width: 42, height: 42)
-                            .background(Tema.superficie, in: Circle())
-                            .overlay(Circle().stroke(Tema.borde, lineWidth: 1))
-                            .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+                            .modifier(CirculoBarra())
                     }
                     .accessibilityLabel("Ajustes")
+                    if let usuario = store.usuario {
+                        Button {
+                            ajustes = true
+                        } label: {
+                            Text(usuario.iniciales.prefix(1))
+                                .font(.system(size: 15, weight: .heavy))
+                                .foregroundStyle(.white)
+                                .frame(width: 38, height: 38)
+                                .background(Circle().fill(Tema.Seccion.azul).overlay(Circle().fill(LinearGradient(colors: [.white.opacity(0.35), .clear], startPoint: .topLeading, endPoint: .bottomTrailing))))
+                                .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
+                        }
+                        .accessibilityLabel("\(usuario.nombre), \(store.esAdmin ? "administrador" : "asesor")")
+                    }
                 }
                 .padding(.leading, 18)
-                .padding(.trailing, 14)
-                .padding(.vertical, 8)
+                .padding(.trailing, 16)
+                .padding(.top, 6)
+                .padding(.bottom, 10)
                 .background(Tema.superficie.ignoresSafeArea(edges: .top))
                 .overlay(alignment: .bottom) { Rectangle().fill(Tema.borde).frame(height: 1) }
             }
@@ -416,6 +423,32 @@ struct ChipSL: View {
             .padding(.vertical, 2)
             .background(Tema.acento.opacity(0.12), in: Capsule())
             .overlay(Capsule().stroke(Tema.acento.opacity(0.35), lineWidth: 1))
+    }
+}
+
+/// Folio chip that copies itself when tapped.
+struct ChipCopiable: View {
+    @EnvironmentObject private var store: Store
+    let texto: String
+    var etiqueta = "SL"
+
+    var body: some View {
+        Button {
+            UIPasteboard.general.string = texto
+            store.avisar("✓ \(etiqueta) copiado")
+        } label: {
+            HStack(spacing: 4) {
+                Text(texto).font(.system(size: 11, weight: .bold, design: .monospaced)).lineLimit(1).fixedSize()
+                Image(systemName: "doc.on.doc").font(.system(size: 9, weight: .bold))
+            }
+            .foregroundStyle(Tema.acento)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Tema.acento.opacity(0.12), in: Capsule())
+            .overlay(Capsule().stroke(Tema.acento.opacity(0.35), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Copiar \(etiqueta) \(texto)")
     }
 }
 

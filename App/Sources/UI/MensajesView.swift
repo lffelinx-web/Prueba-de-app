@@ -12,6 +12,13 @@ struct MenuMensajesView: View {
                         OpcionMenu(titulo: categoria.titulo, detalle: categoria.descripcion, icono: categoria.icono, color: color(categoria))
                     }
                 }
+                if !masivos {
+                    NavigationLink {
+                        PlantillasView(recordatorios: false)
+                    } label: {
+                        OpcionMenu(titulo: "Plantillas de mensajes", detalle: "Textos de cada categoría", icono: "text.bubble.fill", color: Tema.Seccion.cian)
+                    }
+                }
             }
             .buttonStyle(.plain)
             .padding()
@@ -335,27 +342,31 @@ struct ListaEnvioView: View {
         cuerpoPara(c) == .financing ? plantilla?.advFinancing == true : plantilla?.advCreditos == true
     }
 
-    private func campo(_ titulo: String, _ mapa: Binding<[String: String]>, _ id: String) -> some View {
-        TextField(titulo, text: Binding(get: { mapa.wrappedValue[id] ?? "" }, set: { mapa.wrappedValue[id] = $0 }))
-            .keyboardType(.decimalPad)
-            .campoTema()
-    }
-
-    @ViewBuilder
+    /// One contact of a personalized list: who (with copyable folio and phone), the data the
+    /// message needs, and two clear actions.
     private func filaPersonalizada(_ c: Cliente, plantilla: MensajePredeterminado?) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 3) {
+        let tipo = cuerpoPara(c)
+        let folio = categoria == .prAprobadas ? c.numPR : c.sl
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     NombreCliente(nombre: c.nombre)
-                    infoSecundaria(c)
+                    HStack(spacing: 8) {
+                        if let folio { ChipCopiable(texto: folio, etiqueta: categoria == .prAprobadas ? "PR" : "SL") }
+                        LineaTelefono(tel: c.tel)
+                    }
                 }
-                Spacer()
+                Spacer(minLength: 4)
+                etiquetaFila(c, tipo: tipo, plantilla: plantilla)
+            }
+            camposExtra(c, tipo: tipo, plantilla: plantilla)
+            HStack(spacing: 8) {
                 Button {
                     enviar(c, plantilla: plantilla)
                 } label: {
-                    Image(systemName: "message.fill")
+                    Label("Enviar WhatsApp", systemImage: "message.fill").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.pastilla(Tema.whatsapp, relleno: true))
+                .buttonStyle(.pastilla(Tema.Seccion.whatsapp, relleno: true))
                 Button {
                     confirmacion = Confirmacion(
                         titulo: "Marcar como enviado",
@@ -368,55 +379,79 @@ struct ListaEnvioView: View {
                         }
                     }
                 } label: {
-                    Image(systemName: "checkmark")
+                    Label("Enviado", systemImage: "checkmark").frame(maxWidth: 110)
                 }
-                .buttonStyle(.pastilla())
+                .buttonStyle(.pastilla(Tema.apagado))
             }
-            camposExtra(c, plantilla: plantilla)
         }
     }
 
     @ViewBuilder
-    private func infoSecundaria(_ c: Cliente) -> some View {
-        switch (categoria, cuerpoPara(c)) {
-        case (_, .macropesos):
-            Text("💰 \(Dinero.texto(c.macropesos ?? 0))").font(Tipo.detalle.monospaced()).foregroundStyle(Tema.acento)
-        case (_, .linea):
-            Text(c.sl ?? "—").font(Tipo.detalle.monospaced()).foregroundStyle(Tema.acento)
-        case (.prAprobadas, let tipo):
-            Text("\(c.numPR ?? "—") · \(tipo == .financing ? "💼 Financing" : "💳 Créditos")").font(Tipo.detalle.monospaced()).foregroundStyle(Tema.acento)
-        case (.porfinalizar, _):
-            Text("\(c.sl ?? "—") · 💰 \(Dinero.texto(c.macropesos ?? 0))").font(Tipo.detalle.monospaced()).foregroundStyle(Tema.acento)
-        default:
-            Text(c.tel).font(Tipo.detalle.monospaced()).foregroundStyle(Tema.apagado)
+    private func etiquetaFila(_ c: Cliente, tipo: CuerpoMensaje, plantilla: MensajePredeterminado?) -> some View {
+        switch tipo {
+        case .macropesos, .porfinalizar:
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("MACROPESOS").font(.system(size: 10, weight: .semibold)).tracking(0.5).foregroundStyle(Tema.apagado)
+                Text(Dinero.texto(c.macropesos ?? 0)).font(.system(size: 14, weight: .heavy, design: .monospaced)).foregroundStyle(Tema.acento)
+            }
+        case .linea:
+            if let guardada = c["lineaCreditoGuardada"]?.text, let monto = Double(guardada) {
+                Etiqueta("Guardada", color: Tema.exito).help(Dinero.texto(monto))
+            }
+        case .financing, .creditos:
+            Etiqueta(tipo == .financing ? "Financing" : "Créditos", color: tipo == .financing ? Tema.Seccion.azul : Tema.Seccion.morado)
+        case .promociones:
+            EmptyView()
         }
     }
 
+    /// An amount field with its label above and a "$" in front.
+    private func campoMonto(_ titulo: String, _ mapa: Binding<[String: String]>, _ id: String, sugerencia: String = "0") -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(titulo.uppercased()).font(.system(size: 10, weight: .semibold)).tracking(0.5).foregroundStyle(Tema.apagado)
+            HStack(spacing: 4) {
+                Text("$").font(.system(size: 15, weight: .bold)).foregroundStyle(Tema.apagado)
+                TextField(sugerencia, text: Binding(get: { mapa.wrappedValue[id] ?? "" }, set: { mapa.wrappedValue[id] = $0 }))
+                    .keyboardType(.decimalPad)
+                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 40)
+            .background(Tema.superficie2.opacity(0.7), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Tema.borde, lineWidth: 1))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     @ViewBuilder
-    private func camposExtra(_ c: Cliente, plantilla: MensajePredeterminado?) -> some View {
-        let tipo = cuerpoPara(c)
+    private func camposExtra(_ c: Cliente, tipo: CuerpoMensaje, plantilla: MensajePredeterminado?) -> some View {
         if tipo == .linea {
             let guardada = c["lineaCreditoGuardada"]?.text
-            HStack(spacing: 6) {
-                campo(lineaAvanzada || guardada == nil ? "Monto $" : Dinero.texto(Double(guardada ?? "")), $lineas, c.id)
-                if lineaAvanzada {
-                    if let guardada { Text(Dinero.texto(Double(guardada))).font(.caption.weight(.semibold)).foregroundStyle(Tema.exito) }
-                    if store.esAdmin {
-                        Button { guardarLinea(c) } label: { Image(systemName: guardada == nil ? "square.and.arrow.down" : "pencil") }
-                            .buttonStyle(.pastilla())
+            HStack(alignment: .bottom, spacing: 8) {
+                campoMonto("Línea de crédito", $lineas, c.id)
+                if lineaAvanzada, store.esAdmin {
+                    Button { guardarLinea(c) } label: {
+                        Label(guardada == nil ? "Guardar" : "Actualizar", systemImage: guardada == nil ? "square.and.arrow.down" : "pencil")
                     }
+                    .buttonStyle(.pastilla(Tema.acento))
+                    .frame(height: 40)
                 }
             }
+            if let guardada, let monto = Double(guardada) {
+                Label("Línea guardada: \(Dinero.texto(monto))", systemImage: "checkmark.circle.fill")
+                    .font(Tipo.detalle.weight(.semibold))
+                    .foregroundStyle(Tema.exito)
+            }
         } else if tipo == .porfinalizar || ((tipo == .financing || tipo == .creditos) && !avanzadasPR(c, plantilla)) {
-            campo("Línea de crédito $", $lineas, c.id)
+            campoMonto("Línea de crédito", $lineas, c.id)
         } else if tipo == .financing || tipo == .creditos {
-            HStack(spacing: 6) {
-                campo("Línea $", $lineas, c.id)
-                campo("Enganche $", $enganches, c.id)
+            HStack(spacing: 8) {
+                campoMonto("Línea", $lineas, c.id)
+                campoMonto("Enganche", $enganches, c.id)
             }
             if tipo == .financing {
                 Picker("Equipo", selection: Binding(get: { equipos[c.id] ?? "" }, set: { equipos[c.id] = $0 })) {
-                    Text("Equipo").tag("")
+                    Text("Elegir equipo").tag("")
                     ForEach(store.catalogoCelulares.keys.sorted(), id: \.self) { marca in
                         Section(marca) {
                             ForEach(store.catalogoCelulares[marca] ?? [], id: \.self) { modelo in
@@ -425,11 +460,12 @@ struct ListaEnvioView: View {
                         }
                     }
                 }
-                .font(.caption)
+                .pickerStyle(.menu)
+                .font(Tipo.dato)
             } else {
                 HStack {
                     Picker("Tipo prod.", selection: Binding(get: { tiposProducto[c.id] ?? "" }, set: { tiposProducto[c.id] = $0; modelos[c.id] = "" })) {
-                        Text("Tipo prod.").tag("")
+                        Text("Tipo de producto").tag("")
                         ForEach(Store.categoriasProducto, id: \.self) { Text($0).tag($0) }
                     }
                     Picker("Modelo", selection: Binding(get: { modelos[c.id] ?? "" }, set: { modelos[c.id] = $0 })) {
@@ -437,7 +473,8 @@ struct ListaEnvioView: View {
                         ForEach(store.modelos(de: tiposProducto[c.id] ?? ""), id: \.self) { Text($0).tag($0) }
                     }
                 }
-                .font(.caption)
+                .pickerStyle(.menu)
+                .font(Tipo.dato)
             }
         }
     }

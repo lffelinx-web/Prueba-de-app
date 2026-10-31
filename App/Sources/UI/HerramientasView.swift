@@ -181,6 +181,11 @@ struct MenuRecordatoriosView: View {
                 NavigationLink(value: RutaHerramienta.recordatorio(.creditoDisponible)) {
                     OpcionMenu(titulo: "Crédito disponible", detalle: "Clientes con crédito disponible para renovar", icono: "chart.bar.fill", color: Tema.Seccion.verde)
                 }
+                NavigationLink {
+                    PlantillasView(mensajes: false)
+                } label: {
+                    OpcionMenu(titulo: "Plantillas de recordatorios", detalle: "Textos que se envían por WhatsApp", icono: "text.bubble.fill", color: Tema.Seccion.cian)
+                }
             }
             .buttonStyle(.plain)
             .padding()
