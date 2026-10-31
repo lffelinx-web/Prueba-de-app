@@ -91,13 +91,38 @@ struct AjustesView: View {
     @EnvironmentObject private var store: Store
     @EnvironmentObject private var bloqueo: Bloqueo
     @AppStorage("temaClaro") private var temaClaro = false
+    @AppStorage("faceIDActivo") private var faceIDActivo = false
+    @Environment(\.dismiss) private var dismiss
     @State private var confirmarSalida = false
+    @State private var pedirContrasena = false
+    @State private var contrasena = ""
+    @State private var errorContrasena = ""
+    @State private var verificando = false
 
     private var version: String {
         let info = Bundle.main.infoDictionary
         let corta = info?["CFBundleShortVersionString"] as? String ?? "—"
         let compilacion = info?["CFBundleVersion"] as? String ?? "—"
         return "\(corta) (\(compilacion))"
+    }
+
+    private func activarBiometria() async {
+        guard let usuario = store.usuario else { return }
+        verificando = true
+        defer { verificando = false }
+        guard await store.verificarContrasena(contrasena) else {
+            errorContrasena = "Contraseña incorrecta."
+            return
+        }
+        guard await Biometria.autenticar("Activa \(Biometria.nombre) para Centro de datos", cancelar: "Cancelar") != nil,
+              Llavero.guardar(usuario: usuario.username.lowercased(), contrasena: contrasena) else {
+            errorContrasena = "No se pudo activar \(Biometria.nombre)."
+            return
+        }
+        faceIDActivo = true
+        contrasena = ""
+        pedirContrasena = false
+        store.avisar("✓ \(Biometria.nombre) activado")
     }
 
     var body: some View {
@@ -120,7 +145,9 @@ struct AjustesView: View {
                 .seccionTema()
             }
             Section("Mensajes") {
-                NavigationLink(value: RutaHerramienta.plantillas) {
+                NavigationLink {
+                    PlantillasView()
+                } label: {
                     Label("Plantillas de WhatsApp", systemImage: "text.bubble")
                 }
             }
@@ -132,7 +159,25 @@ struct AjustesView: View {
             }
             .seccionTema()
             Section("Seguridad") {
+                if Biometria.disponible {
+                    Toggle(isOn: Binding(
+                        get: { faceIDActivo },
+                        set: { activar in
+                            if activar {
+                                contrasena = ""
+                                errorContrasena = ""
+                                pedirContrasena = true
+                            } else {
+                                Llavero.borrar()
+                                faceIDActivo = false
+                            }
+                        }
+                    )) {
+                        Label("Usar \(Biometria.nombre)", systemImage: Biometria.icono)
+                    }
+                }
                 Button {
+                    dismiss()
                     bloqueo.bloquear()
                 } label: {
                     Label("Bloquear ahora", systemImage: "lock.fill")
@@ -155,8 +200,38 @@ struct AjustesView: View {
             .seccionTema()
         }
         .fondoTema()
-        .navigationTitle("Configuración")
+        .navigationTitle("Ajustes")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) { Button("Listo") { dismiss() } }
+        }
+        .sheet(isPresented: $pedirContrasena) {
+            NavigationStack {
+                Form {
+                    Section {
+                        SecureField("Contraseña", text: $contrasena)
+                            .textContentType(.password)
+                    } footer: {
+                        Text("Se guarda cifrada en el llavero de este iPhone y solo se usa después de \(Biometria.nombre).")
+                    }
+                    .seccionTema()
+                    if !errorContrasena.isEmpty {
+                        Text(errorContrasena).foregroundStyle(Tema.peligro).seccionTema()
+                    }
+                }
+                .fondoTema()
+                .navigationTitle("Confirma tu contraseña")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { pedirContrasena = false } }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Activar") { Task { await activarBiometria() } }
+                            .disabled(contrasena.isEmpty || verificando)
+                    }
+                }
+            }
+            .presentationDetents([.medium])
+        }
         .confirmationDialog("¿Cerrar sesión?", isPresented: $confirmarSalida, titleVisibility: .visible) {
             Button("Cerrar sesión", role: .destructive) {
                 bloqueo.reiniciar()

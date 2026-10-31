@@ -11,6 +11,8 @@ final class Bloqueo: ObservableObject {
     @Published private(set) var estado: Estado = .libre
     /// Set by the login screen so a fresh sign-in is not locked right away.
     var sesionNueva = false
+    /// Credentials typed at the last sign-in, offered for Face ID once the app is unlocked.
+    @Published var credencialesParaBiometria: (usuario: String, contrasena: String)?
 
     static let inactividad: TimeInterval = 10 * 60
     private var ultimaActividad = Date()
@@ -48,6 +50,7 @@ final class Bloqueo: ObservableObject {
     func reiniciar() {
         estado = .libre
         sesionNueva = false
+        credencialesParaBiometria = nil
     }
 }
 
@@ -103,8 +106,10 @@ struct PantallaPin: View {
     @State private var error = ""
     @State private var intentos = 0
     @State private var bloqueadoHasta = Date.distantPast
+    @AppStorage("faceIDActivo") private var faceIDActivo = false
 
     private var configurando: Bool { bloqueo.estado == .configurando }
+    private var conBiometria: Bool { faceIDActivo && !configurando && Biometria.disponible }
 
     var body: some View {
         VStack(spacing: 22) {
@@ -129,11 +134,31 @@ struct PantallaPin: View {
                 .foregroundStyle(Paleta.peligro)
                 .frame(minHeight: 18)
             teclado
+            if conBiometria {
+                Button {
+                    Task { await desbloquearConBiometria() }
+                } label: {
+                    Label("Usar \(Biometria.nombre)", systemImage: Biometria.icono)
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .buttonStyle(.pastilla(Tema.acento))
+                .padding(.top, 4)
+            }
             Spacer()
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Tema.fondo)
+        .task {
+            if conBiometria { await desbloquearConBiometria() }
+        }
+    }
+
+    private func desbloquearConBiometria() async {
+        guard await Biometria.autenticar("Desbloquea Centro de datos", cancelar: "Usar PIN") != nil else { return }
+        intentos = 0
+        digitos = ""
+        bloqueo.desbloquear()
     }
 
     private var teclado: some View {

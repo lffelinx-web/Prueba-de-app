@@ -6,7 +6,7 @@ enum Tema {
     static let fondo = dinamico(oscuro: 0x0d1117, claro: 0xf0f4f8)
     static let superficie = dinamico(oscuro: 0x161b22, claro: 0xffffff)
     static let superficie2 = dinamico(oscuro: 0x1c2330, claro: 0xe8edf4)
-    static let borde = dinamico(oscuro: 0x30363d, claro: 0xc8d0da)
+    static let borde = dinamico(oscuro: 0x30363d, claro: 0xdbe2ea)
     static let texto = dinamico(oscuro: 0xe6edf3, claro: 0x1a2030)
     static let apagado = dinamico(oscuro: 0x7d8590, claro: 0x6a7585)
     static let acento = dinamico(oscuro: 0x58a6ff, claro: 0x1a6bc8)
@@ -16,6 +16,24 @@ enum Tema {
     static let info = Color(hex: 0x79c0ff)
     static let whatsapp = Color(hex: 0x25d366)
     static let morado = Color(hex: 0xb888f0)
+
+    /// Saturated section colours for the gradient icon tiles.
+    enum Seccion {
+        static let azul = Color(hex: 0x2563eb)
+        static let rojo = Color(hex: 0xdc2626)
+        static let ambar = Color(hex: 0xd97706)
+        static let verde = Color(hex: 0x059669)
+        static let cian = Color(hex: 0x0e7490)
+        static let morado = Color(hex: 0x7c3aed)
+        static let gris = Color(hex: 0x475569)
+        static let whatsapp = Color(hex: 0x16a34a)
+    }
+
+    /// Greeting banner, from the web's accent blue to a deep navy.
+    static let degradadoPortada = LinearGradient(
+        colors: [Color(hex: 0x2f80e4), Color(hex: 0x1a5fb4), Color(hex: 0x0f3a73)],
+        startPoint: .topLeading, endPoint: .bottomTrailing
+    )
 
     /// Text on an accent-filled button, as the web's `.btn-gold`.
     static let sobreAcento = Color(hex: 0x0d1117)
@@ -95,7 +113,7 @@ struct EstiloPastilla: ButtonStyle {
             .minimumScaleFactor(0.85)
             .padding(.horizontal, 10)
             .frame(minHeight: 32)
-            .foregroundStyle(relleno ? Tema.sobreAcento : color)
+            .foregroundStyle(relleno ? Color.white : color)
             .background(relleno ? color : color.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(color.opacity(relleno ? 0 : 0.45), lineWidth: 1))
             .opacity(configuration.isPressed ? 0.6 : 1)
@@ -122,18 +140,24 @@ struct TituloSeccion: View {
     }
 }
 
-/// Icon in a tinted rounded square, as the web's `.dash-icon`.
+/// White symbol on a rounded tile filled with the section colour and a soft highlight,
+/// in the style of Wallet or Health.
 struct IconoCuadro: View {
     let sistema: String
     let color: Color
     var lado: CGFloat = 36
 
     var body: some View {
+        let forma = RoundedRectangle(cornerRadius: lado * 0.29, style: .continuous)
         Image(systemName: sistema)
-            .font(.system(size: lado * 0.48, weight: .semibold))
-            .foregroundStyle(color)
+            .font(.system(size: lado * 0.47, weight: .semibold))
+            .foregroundStyle(.white)
             .frame(width: lado, height: lado)
-            .background(color.opacity(0.15), in: RoundedRectangle(cornerRadius: lado * 0.28))
+            .background {
+                forma.fill(color)
+                    .overlay(forma.fill(LinearGradient(colors: [.white.opacity(0.38), .white.opacity(0)], startPoint: .topLeading, endPoint: .bottomTrailing)))
+            }
+            .shadow(color: color.opacity(0.45), radius: 6, x: 0, y: 4)
     }
 }
 

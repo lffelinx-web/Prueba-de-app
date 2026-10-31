@@ -100,6 +100,7 @@ struct FilaDato: View {
 
 struct CodigoQR: View {
     let texto: String
+    var lado: CGFloat = 170
 
     var body: some View {
         if let imagen = CodigoQR.generar(texto) {
@@ -107,8 +108,8 @@ struct CodigoQR: View {
                 .interpolation(.none)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 170, height: 170)
-                .padding(10)
+                .frame(width: lado, height: lado)
+                .padding(lado * 0.07)
                 .background(.white, in: RoundedRectangle(cornerRadius: 8))
         }
     }

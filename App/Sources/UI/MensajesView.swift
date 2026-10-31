@@ -28,10 +28,10 @@ struct MenuMensajesView: View {
 
     private func color(_ categoria: CategoriaMensaje) -> Color {
         switch categoria {
-        case .sinrenovar: return Tema.morado
-        case .porfinalizar: return Tema.advertencia
-        case .prAprobadas: return Tema.exito
-        case .prospectos, .prospectosVerificados: return Tema.info
+        case .sinrenovar: return Tema.Seccion.morado
+        case .porfinalizar: return Tema.Seccion.ambar
+        case .prAprobadas: return Tema.Seccion.verde
+        case .prospectos, .prospectosVerificados: return Tema.Seccion.cian
         }
     }
 }
@@ -41,9 +41,9 @@ struct MenuSubtiposSinRenovarView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 Text("¿Qué tipo de mensaje vas a enviar?").font(.subheadline).foregroundStyle(Tema.apagado)
-                opcion(.promociones, "Promociones", "Mensaje promocional general", "megaphone.fill", Tema.advertencia)
-                opcion(.macropesos, "Macropesos", "Cliente por cliente con sus macropesos", "banknote", Tema.acento)
-                opcion(.linea, "Línea de crédito", "Captura el monto manual por cliente", "chart.bar.fill", Tema.exito)
+                opcion(.promociones, "Promociones", "Mensaje promocional general", "megaphone.fill", Tema.Seccion.ambar)
+                opcion(.macropesos, "Macropesos", "Cliente por cliente con sus macropesos", "banknote.fill", Tema.Seccion.azul)
+                opcion(.linea, "Línea de crédito", "Captura el monto manual por cliente", "chart.bar.fill", Tema.Seccion.verde)
             }
             .buttonStyle(.plain)
             .padding()

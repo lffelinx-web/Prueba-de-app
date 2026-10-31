@@ -30,41 +30,88 @@ extension View {
         }
     }
 
-    /// Bell with the unread count, shown on every main screen.
-    func conNotificaciones() -> some View {
-        modifier(BotonNotificaciones())
+    /// The web's top bar on the three main tabs: title, user, notifications and settings.
+    func conBarraSuperior() -> some View {
+        modifier(BarraSuperior())
     }
 }
 
-private struct BotonNotificaciones: ViewModifier {
+private struct BarraSuperior: ViewModifier {
     @EnvironmentObject private var store: Store
-    @State private var abiertas = false
+    @State private var notificaciones = false
+    @State private var ajustes = false
 
     func body(content: Content) -> some View {
         content
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+            .toolbar(.hidden, for: .navigationBar)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                HStack(spacing: 8) {
+                    Text("Centro de datos")
+                        .font(.system(size: 19, weight: .heavy))
+                        .foregroundStyle(Tema.acento)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    Spacer(minLength: 4)
+                    if let usuario = store.usuario {
+                        HStack(spacing: 6) {
+                            Text(usuario.iniciales.prefix(1))
+                                .font(.system(size: 13, weight: .heavy))
+                                .foregroundStyle(.white)
+                                .frame(width: 30, height: 30)
+                                .background(Circle().fill(Tema.Seccion.azul).overlay(Circle().fill(LinearGradient(colors: [.white.opacity(0.35), .clear], startPoint: .topLeading, endPoint: .bottomTrailing))))
+                            Text(usuario.primerNombre)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(Tema.texto)
+                                .lineLimit(1)
+                        }
+                    }
                     Button {
-                        abiertas = true
+                        notificaciones = true
                     } label: {
                         let pendientes = store.notificacionesVisibles.filter { !$0.leida }.count
-                        Image(systemName: pendientes > 0 ? "bell.badge.fill" : "bell")
+                        Image(systemName: "bell.fill")
+                            .font(.system(size: 17))
+                            .foregroundStyle(Tema.Seccion.ambar)
+                            .frame(width: 42, height: 42)
+                            .background(Tema.advertencia.opacity(0.16), in: Circle())
                             .overlay(alignment: .topTrailing) {
                                 if pendientes > 0 {
                                     Text(pendientes > 99 ? "99+" : "\(pendientes)")
                                         .font(.system(size: 10, weight: .bold))
                                         .foregroundStyle(.white)
-                                        .padding(.horizontal, 4)
-                                        .background(Paleta.peligro, in: Capsule())
-                                        .offset(x: 10, y: -8)
+                                        .padding(.horizontal, 5)
+                                        .frame(minWidth: 18, minHeight: 18)
+                                        .background(Tema.peligro, in: Capsule())
+                                        .overlay(Capsule().stroke(Tema.superficie, lineWidth: 2))
+                                        .offset(x: 3, y: -3)
                                 }
                             }
                     }
                     .accessibilityLabel("Notificaciones")
+                    Button {
+                        ajustes = true
+                    } label: {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Tema.texto)
+                            .frame(width: 42, height: 42)
+                            .background(Tema.superficie, in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Tema.borde, lineWidth: 1))
+                    }
+                    .accessibilityLabel("Ajustes")
                 }
+                .padding(.leading, 18)
+                .padding(.trailing, 14)
+                .padding(.vertical, 8)
+                .background(Tema.superficie.ignoresSafeArea(edges: .top))
+                .overlay(alignment: .bottom) { Rectangle().fill(Tema.borde).frame(height: 1) }
             }
-            .sheet(isPresented: $abiertas) {
+            .sheet(isPresented: $notificaciones) {
                 NotificacionesView()
+            }
+            .sheet(isPresented: $ajustes) {
+                NavigationStack { AjustesView() }
+                    .capaDeEstado()
             }
     }
 }
@@ -75,6 +122,10 @@ struct InicioView: View {
     @EnvironmentObject private var store: Store
     @State private var confirmacion: Confirmacion?
     @State private var plegadas: Set<String> = []
+    @State private var completas: Set<String> = []
+
+    /// Rows shown before "Ver todos".
+    private let filasVisibles = 3
 
     var body: some View {
         let clientes = store.clientes
@@ -85,40 +136,35 @@ struct InicioView: View {
         let atrasados = Reglas.atrasados(clientes)
 
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(saludo).font(Tipo.saludo).foregroundStyle(Tema.texto)
-                    Text(Fecha.larga(Date()).capitalizedFirst).font(Tipo.dato).foregroundStyle(Tema.apagado)
-                }
-                .padding(.horizontal, 4)
-                .padding(.bottom, 4)
+            VStack(alignment: .leading, spacing: 12) {
+                portada(pagos: pagos.count, atrasados: atrasados.count, liquidaciones: liquidaciones.count)
 
-                panel("pagos", "Pagos pendientes hoy", "Vencen hoy", icono: "dollarsign", color: Tema.advertencia, cantidad: pagos.count) {
-                    ForEach(pagos) { item in
+                panel("pagos", "Pagos pendientes hoy", "Vencen hoy", icono: "dollarsign", color: Tema.Seccion.ambar, cantidad: pagos.count) { limite in
+                    ForEach(pagos.prefix(limite)) { item in
                         FilaPago(cliente: item.cliente, pago: item.pago, atrasado: false, confirmacion: $confirmacion)
                     }
                 }
-                panel("atrasados", "Pagos atrasados", "Primeros 4 pagos sin confirmar", icono: "alarm.fill", color: Tema.peligro, cantidad: atrasados.count, vacio: "Sin pagos atrasados") {
-                    ForEach(atrasados) { item in
+                panel("atrasados", "Pagos atrasados", "Primeros 4 pagos sin confirmar", icono: "alarm.fill", color: Tema.Seccion.rojo, cantidad: atrasados.count) { limite in
+                    ForEach(atrasados.prefix(limite)) { item in
                         FilaPago(cliente: item.cliente, pago: item.pago, atrasado: true, confirmacion: $confirmacion)
                     }
                 }
-                panel("pr", "PR aprobadas pendientes", "Vigencia de 30 días", icono: "checkmark.seal.fill", color: Tema.exito, cantidad: prs.count) {
-                    ForEach(prs) { c in
+                panel("pr", "PR aprobadas pendientes", "Vigencia de 30 días", icono: "checkmark.seal.fill", color: Tema.Seccion.verde, cantidad: prs.count) { limite in
+                    ForEach(prs.prefix(limite)) { c in
                         filaCompacta(c, detalle: "PR \(c.numPR ?? "—")") {
                             BotonWhatsApp(cliente: c, compacto: true)
                         }
                     }
                 }
-                panel("liq", "Liquidaciones esta semana", "De lunes a domingo", icono: "banknote.fill", color: Tema.info, cantidad: liquidaciones.count) {
-                    ForEach(liquidaciones) { c in
+                panel("liq", "Liquidaciones esta semana", "De lunes a domingo", icono: "banknote.fill", color: Tema.Seccion.cian, cantidad: liquidaciones.count) { limite in
+                    ForEach(liquidaciones.prefix(limite)) { c in
                         filaCompacta(c, detalle: "Vence \(Fecha.corta(c.fechaFin))", aviso: tieneOtroActivo(c) ? "Tiene otro crédito activo" : nil) {
                             ChipSL(c.sl ?? "—")
                         }
                     }
                 }
-                panel("seg", "Seguimiento a clientes", "Marcados para seguimiento", icono: "list.clipboard.fill", color: Tema.morado, cantidad: seguimiento.count) {
-                    ForEach(seguimiento) { c in
+                panel("seg", "Seguimiento a clientes", "Marcados para seguimiento", icono: "list.clipboard.fill", color: Tema.Seccion.morado, cantidad: seguimiento.count) { limite in
+                    ForEach(seguimiento.prefix(limite)) { c in
                         filaCompacta(c, detalle: [c.seguimiento?.tipo, c.seguimiento?.notas].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")) {
                             if store.esAdmin {
                                 Button {
@@ -135,12 +181,11 @@ struct InicioView: View {
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.top, 14)
+            .padding(.bottom, 24)
         }
         .background(Tema.fondo)
-        .navigationTitle("Centro de datos")
-        .navigationBarTitleDisplayMode(.inline)
-        .conNotificaciones()
+        .conBarraSuperior()
         .confirmacion($confirmacion)
         .overlay {
             if !store.clientesCargados { ProgressView() }
@@ -151,6 +196,40 @@ struct InicioView: View {
         let hora = Calendar.current.component(.hour, from: Date())
         let texto = hora < 12 ? "Buenos días" : hora < 18 ? "Buenas tardes" : "Buenas noches"
         return "\(texto), \(store.usuario?.primerNombre ?? "")"
+    }
+
+    private func plural(_ n: Int, _ singular: String, _ plural: String) -> String {
+        "\(n) \(n == 1 ? singular : plural)"
+    }
+
+    /// Greeting on the blue gradient, with a one-line summary of the day.
+    private func portada(pagos: Int, atrasados: Int, liquidaciones: Int) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(saludo)
+                    .font(.system(size: 24, weight: .heavy))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Text(Fecha.larga(Date()).capitalizedFirst)
+                    .font(.system(size: 14))
+                    .opacity(0.82)
+            }
+            Rectangle().fill(.white.opacity(0.2)).frame(height: 1)
+            (Text("Hoy tienes ")
+                + Text(plural(pagos, "pago pendiente", "pagos pendientes")).bold()
+                + Text(", ")
+                + Text(plural(atrasados, "atrasado", "atrasados")).bold()
+                + Text(" y ")
+                + Text(plural(liquidaciones, "liquidación", "liquidaciones")).bold()
+                + Text(" esta semana."))
+                .font(.system(size: 13))
+                .opacity(0.94)
+        }
+        .foregroundStyle(.white)
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Tema.degradadoPortada, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: Color(hex: 0x0f3a73).opacity(0.35), radius: 14, x: 0, y: 10)
     }
 
     private func tieneOtroActivo(_ c: Cliente) -> Bool {
@@ -180,54 +259,72 @@ struct InicioView: View {
             .buttonStyle(.plain)
             accesorio()
         }
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .overlay(alignment: .top) { Rectangle().fill(Tema.borde.opacity(0.6)).frame(height: 1) }
     }
 
-    /// One of the web's dashboard cards: its header and its rows inside the same card, foldable.
+    /// A section card: tinted header with its gradient icon and count, rows inside, foldable.
+    /// Empty sections collapse to one line.
     private func panel<Contenido: View>(_ clave: String, _ titulo: String, _ subtitulo: String, icono: String, color: Color, cantidad: Int,
-                                        vacio: String = "Sin registros", @ViewBuilder contenido: () -> Contenido) -> some View {
-        let abierta = !plegadas.contains(clave)
+                                        @ViewBuilder contenido: (Int) -> Contenido) -> some View {
+        let abierta = cantidad > 0 && !plegadas.contains(clave)
+        let todas = completas.contains(clave)
         return VStack(alignment: .leading, spacing: 0) {
             Button {
+                guard cantidad > 0 else { return }
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    if abierta { plegadas.insert(clave) } else { plegadas.remove(clave) }
+                    if plegadas.contains(clave) { plegadas.remove(clave) } else { plegadas.insert(clave) }
                 }
             } label: {
-                HStack(spacing: 10) {
-                    IconoCuadro(sistema: icono, color: color, lado: 32)
+                HStack(spacing: 12) {
+                    IconoCuadro(sistema: icono, color: color, lado: 34)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(titulo).font(Tipo.encabezado).foregroundStyle(Tema.texto).lineLimit(1)
+                        Text(titulo).font(Tipo.encabezado).foregroundStyle(cantidad > 0 ? color : Tema.texto).lineLimit(1)
                         Text(subtitulo).font(Tipo.detalle).foregroundStyle(Tema.apagado).lineLimit(1)
                     }
                     Spacer(minLength: 6)
-                    Etiqueta("\(cantidad)", color: cantidad > 0 ? color : Tema.apagado)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Tema.apagado)
-                        .rotationEffect(.degrees(abierta ? 0 : -90))
+                    if cantidad > 0 {
+                        Etiqueta("\(cantidad)", color: color)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Tema.apagado)
+                            .rotationEffect(.degrees(abierta ? 0 : -90))
+                    } else {
+                        Text("Sin pendientes").font(Tipo.detalle.weight(.semibold)).foregroundStyle(Tema.apagado)
+                    }
                 }
-                .padding(12)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(cantidad > 0 ? LinearGradient(colors: [color.opacity(0.14), color.opacity(0.05)], startPoint: .top, endPoint: .bottom) : LinearGradient(colors: [.clear], startPoint: .top, endPoint: .bottom))
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
             if abierta {
-                Divider().overlay(Tema.borde)
-                if cantidad == 0 {
-                    Text(vacio)
-                        .font(Tipo.dato)
-                        .foregroundStyle(Tema.apagado)
-                        .padding(12)
-                } else {
-                    VStack(alignment: .leading, spacing: 0) {
-                        contenido()
+                contenido(todas ? cantidad : filasVisibles)
+                if cantidad > filasVisibles {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            if todas { completas.remove(clave) } else { completas.insert(clave) }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(todas ? "Mostrar menos" : "Ver todos (\(cantidad))")
+                            Image(systemName: todas ? "chevron.up" : "chevron.right")
+                        }
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Tema.acento)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .overlay(alignment: .top) { Rectangle().fill(Tema.borde.opacity(0.6)).frame(height: 1) }
                     }
-                    .padding(.horizontal, 12)
+                    .buttonStyle(.plain)
                 }
             }
         }
-        .background(Tema.superficie, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Tema.borde, lineWidth: 1))
+        .background(Tema.superficie, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(abierta ? color.opacity(0.3) : Tema.borde, lineWidth: 1))
     }
 }
 
@@ -289,8 +386,9 @@ struct FilaPago: View {
                 BotonRecordatorioPago(cliente: cliente, pago: pago, atrasado: urgente)
             }
         }
-        .padding(.vertical, 10)
-        .overlay(alignment: .bottom) { Divider().overlay(Tema.borde) }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .overlay(alignment: .top) { Rectangle().fill(Tema.borde.opacity(0.6)).frame(height: 1) }
     }
 }
 
@@ -332,12 +430,12 @@ struct BotonRecordatorioPago: View {
             Link(destination: url) {
                 Label("Recordar", systemImage: "message.fill").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.pastilla(Tema.whatsapp))
+            .buttonStyle(.pastilla(Tema.Seccion.whatsapp, relleno: true))
         } else if cliente.tieneTelefonoWA, let url = WhatsApp.url(cliente.tel) {
             Link(destination: url) {
                 Label("WhatsApp", systemImage: "message.fill").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.pastilla(Tema.whatsapp))
+            .buttonStyle(.pastilla(Tema.Seccion.whatsapp, relleno: true))
         }
     }
 }

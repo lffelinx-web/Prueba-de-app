@@ -2,50 +2,192 @@ import SwiftUI
 
 struct BaseDatosView: View {
     @EnvironmentObject private var store: Store
-
-    private let columnas = [GridItem(.adaptive(minimum: 150), spacing: 12)]
+    @State private var busqueda = ""
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columnas, spacing: 12) {
-                ForEach(Categoria.allCases) { categoria in
-                    NavigationLink(value: Ruta.categoria(categoria)) {
-                        VStack(spacing: 8) {
-                            IconoCuadro(sistema: categoria.icono, color: color(categoria), lado: 44)
-                            Text(categoria.titulo)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Tema.texto)
-                                .multilineTextAlignment(.center)
-                            Text("\(Reglas.conteo(categoria, en: store.clientes)) reg.")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(Tema.apagado)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
-                        .background(Tema.superficie, in: RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Tema.borde, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
+            VStack(alignment: .leading, spacing: 0) {
+                buscador
+                if busqueda.trimmingCharacters(in: .whitespaces).isEmpty {
+                    resumen.padding(.top, 14)
+                    grupo("Cartera", [.activos, .sinrenovar])
+                    grupo("Captación", [.prospectos, .prAprobadas, .prRechazadas])
+                    grupo("Riesgo", [.fraude])
+                } else {
+                    resultados
                 }
             }
-            .padding()
+            .padding(.horizontal, 14)
+            .padding(.top, 14)
+            .padding(.bottom, 24)
         }
+        .scrollDismissesKeyboard(.immediately)
         .background(Tema.fondo)
-        .navigationTitle("Base de datos")
-        .conNotificaciones()
+        .conBarraSuperior()
         .overlay {
             if !store.clientesCargados { ProgressView() }
         }
     }
 
-    private func color(_ categoria: Categoria) -> Color {
+    private var buscador: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass").foregroundStyle(Tema.apagado)
+            TextField("Buscar nombre, teléfono, SL o PR", text: $busqueda)
+                .font(.system(size: 15))
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            if !busqueda.isEmpty {
+                Button { busqueda = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Tema.apagado) }
+                    .accessibilityLabel("Borrar búsqueda")
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 46)
+        .background(Tema.superficie, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Tema.borde, lineWidth: 1))
+    }
+
+    /// Active portfolio on the blue gradient, with its breakdown.
+    private var resumen: some View {
+        let activos = store.clientes.filter { $0.categoria == .activos && !Reglas.ocultoPorDobleFin($0, en: store.clientes) }
+        let atraso = activos.filter { $0.estatus == .atraso }.count
+        let liquidan = Reglas.liquidacionesSemana(store.clientes).count
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("CARTERA ACTIVA").font(.system(size: 12, weight: .semibold)).tracking(0.8).opacity(0.8)
+                    Text("\(activos.count)").font(.system(size: 38, weight: .heavy))
+                    Text("clientes con crédito vigente").font(.system(size: 13)).opacity(0.85)
+                }
+                Spacer()
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: 24, weight: .semibold))
+                    .frame(width: 56, height: 56)
+                    .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            HStack(spacing: 8) {
+                cifra("\(activos.count - atraso)", "al corriente", color: .white)
+                cifra("\(atraso)", "en atraso", color: Color(hex: 0xfde68a))
+                cifra("\(liquidan)", "liquidan esta sem.", color: .white)
+            }
+        }
+        .foregroundStyle(.white)
+        .padding(16)
+        .background(Tema.degradadoPortada, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: Color(hex: 0x0f3a73).opacity(0.35), radius: 14, x: 0, y: 10)
+    }
+
+    private func cifra(_ valor: String, _ texto: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(valor).font(.system(size: 18, weight: .heavy)).foregroundStyle(color)
+            Text(texto).font(.system(size: 11)).opacity(0.85).lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func grupo(_ titulo: String, _ categorias: [Categoria]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(titulo.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1)
+                .foregroundStyle(Tema.apagado)
+                .padding(.horizontal, 8)
+            VStack(spacing: 0) {
+                ForEach(categorias.indices, id: \.self) { i in
+                    NavigationLink(value: Ruta.categoria(categorias[i])) {
+                        filaCategoria(categorias[i])
+                    }
+                    .buttonStyle(.plain)
+                    .overlay(alignment: .top) {
+                        if i > 0 { Rectangle().fill(Tema.borde.opacity(0.6)).frame(height: 1) }
+                    }
+                }
+            }
+            .background(Tema.superficie, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Tema.borde, lineWidth: 1))
+        }
+        .padding(.top, 22)
+    }
+
+    private func filaCategoria(_ categoria: Categoria) -> some View {
+        let total = Reglas.conteo(categoria, en: store.clientes)
+        return HStack(spacing: 12) {
+            IconoCuadro(sistema: categoria.icono, color: BaseDatosView.color(categoria), lado: 40)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(categoria.titulo).font(.system(size: 15, weight: .semibold)).foregroundStyle(Tema.texto)
+                Text(BaseDatosView.descripcion(categoria)).font(Tipo.detalle).foregroundStyle(Tema.apagado).lineLimit(1)
+            }
+            Spacer(minLength: 6)
+            Text("\(total)")
+                .font(.system(size: 20, weight: .heavy))
+                .foregroundStyle(total == 0 ? Tema.apagado : Tema.texto)
+            Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Tema.apagado)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
+    }
+
+    /// Matches across every category.
+    private var resultados: some View {
+        let q = busqueda.lowercased().trimmingCharacters(in: .whitespaces)
+        let lista = store.clientes.filter { c in
+            c.nombre.lowercased().contains(q) || c.tel.contains(q)
+                || (c.sl ?? "").lowercased().contains(q) || (c.numPR ?? "").lowercased().contains(q)
+        }
+        .prefix(60)
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(lista.isEmpty ? "Sin resultados" : "\(lista.count) resultado\(lista.count == 1 ? "" : "s")")
+                .font(.system(size: 12, weight: .bold))
+                .tracking(0.6)
+                .foregroundStyle(Tema.apagado)
+                .padding(.horizontal, 8)
+                .padding(.top, 16)
+            ForEach(Array(lista)) { c in
+                NavigationLink(value: Ruta.cliente(c.id)) {
+                    HStack(spacing: 12) {
+                        if let categoria = c.categoria {
+                            IconoCuadro(sistema: categoria.icono, color: BaseDatosView.color(categoria), lado: 32)
+                        }
+                        VStack(alignment: .leading, spacing: 3) {
+                            NombreCliente(nombre: c.nombre, apagado: c.inhabilitado)
+                            HStack(spacing: 8) {
+                                LineaTelefono(tel: c.tel)
+                                Text(c.categoria?.titulo ?? c.categoriaTexto).font(Tipo.detalle).foregroundStyle(Tema.apagado).lineLimit(1)
+                            }
+                        }
+                        Spacer(minLength: 4)
+                        Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Tema.apagado)
+                    }
+                    .tarjeta()
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    static func color(_ categoria: Categoria) -> Color {
         switch categoria {
-        case .activos: return Tema.acento
-        case .sinrenovar: return Paleta.doble
-        case .prospectos: return Tema.info
-        case .prAprobadas: return Paleta.exito
-        case .prRechazadas: return Paleta.peligro
-        case .fraude: return Paleta.advertencia
+        case .activos: return Tema.Seccion.azul
+        case .sinrenovar: return Tema.Seccion.morado
+        case .prospectos: return Tema.Seccion.cian
+        case .prAprobadas: return Tema.Seccion.verde
+        case .prRechazadas: return Tema.Seccion.gris
+        case .fraude: return Tema.Seccion.rojo
+        }
+    }
+
+    static func descripcion(_ categoria: Categoria) -> String {
+        switch categoria {
+        case .activos: return "Créditos vigentes y sus pagos"
+        case .sinrenovar: return "Créditos terminados para renovar"
+        case .prospectos: return "Posibles clientes y referencias"
+        case .prAprobadas: return "Vigencia de 30 días"
+        case .prRechazadas: return "Vuelven a prospecto a los 90 días"
+        case .fraude: return "Personas y referencias bloqueadas"
         }
     }
 }

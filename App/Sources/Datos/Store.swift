@@ -105,6 +105,17 @@ final class Store: ObservableObject {
         _ = try await Auth.auth().signIn(withEmail: Store.correo(de: usuario), password: contrasena)
     }
 
+    /// Confirms the signed-in user's password, before storing it for Face ID.
+    func verificarContrasena(_ contrasena: String) async -> Bool {
+        guard let user = Auth.auth().currentUser, let correo = user.email else { return false }
+        do {
+            _ = try await user.reauthenticate(with: EmailAuthProvider.credential(withEmail: correo, password: contrasena))
+            return true
+        } catch {
+            return false
+        }
+    }
+
     func cerrarSesion(mensaje: String = "") {
         epoca += 1
         detenerEscuchas()

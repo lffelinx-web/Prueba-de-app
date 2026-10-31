@@ -59,6 +59,9 @@ struct RootView: View {
     @EnvironmentObject private var store: Store
     @EnvironmentObject private var bloqueo: Bloqueo
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("temaClaro") private var temaClaro = false
+    @AppStorage("faceIDActivo") private var faceIDActivo = false
+    @AppStorage("faceIDPreguntado") private var faceIDPreguntado = false
 
     private let reloj = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
@@ -77,20 +80,37 @@ struct RootView: View {
                     ProgressView("Cargando…")
                 }
             }
-
-            if store.fase == .app, store.pinCargado, bloqueo.estado != .libre {
-                PantallaPin()
-                    .transition(.opacity)
-                    .zIndex(1)
-            }
         }
         .capaDeEstado()
         .background(DetectorActividad { bloqueo.registrarActividad() })
         .onChange(of: store.pinCargado) { _, cargado in
             if cargado { bloqueo.pinCargado(existe: store.pinHash != nil) }
+            sincronizarBloqueo()
         }
         .onChange(of: store.fase) { _, fase in
             if fase != .app { bloqueo.reiniciar() }
+            sincronizarBloqueo()
+        }
+        .onChange(of: bloqueo.estado) { _, _ in sincronizarBloqueo() }
+        .alert("¿Entrar con \(Biometria.nombre)?", isPresented: Binding(
+            get: { ofrecerBiometria },
+            set: { if !$0 { bloqueo.credencialesParaBiometria = nil } }
+        )) {
+            Button("Activar") {
+                if let credenciales = bloqueo.credencialesParaBiometria,
+                   Llavero.guardar(usuario: credenciales.usuario, contrasena: credenciales.contrasena) {
+                    faceIDActivo = true
+                    store.avisar("✓ \(Biometria.nombre) activado")
+                }
+                faceIDPreguntado = true
+                bloqueo.credencialesParaBiometria = nil
+            }
+            Button("Ahora no", role: .cancel) {
+                faceIDPreguntado = true
+                bloqueo.credencialesParaBiometria = nil
+            }
+        } message: {
+            Text("La próxima vez entrarás sin escribir tu contraseña, y \(Biometria.nombre) también desbloqueará la app en lugar del PIN. Puedes cambiarlo en Ajustes.")
         }
         .onReceive(reloj) { _ in revisarInactividad() }
         .onChange(of: scenePhase) { _, fase in
@@ -101,6 +121,26 @@ struct RootView: View {
             set: { store.revisarPagosDe = $0?.id }
         )) { item in
             PagosPasadosView(clienteId: item.id)
+        }
+    }
+
+    /// Asked once, after the first sign-in and once the app is unlocked.
+    private var ofrecerBiometria: Bool {
+        bloqueo.credencialesParaBiometria != nil && store.fase == .app && store.pinCargado && bloqueo.estado == .libre
+    }
+
+    private func sincronizarBloqueo() {
+        if store.fase == .app, store.pinCargado, bloqueo.estado != .libre {
+            VentanaBloqueo.mostrar(
+                PantallaPin()
+                    .environmentObject(store)
+                    .environmentObject(bloqueo)
+                    .tint(Tema.acento)
+                    .preferredColorScheme(temaClaro ? .light : .dark)
+                    .dynamicTypeSize(.xSmall ... .large)
+            )
+        } else {
+            VentanaBloqueo.ocultar()
         }
     }
 
@@ -125,9 +165,14 @@ struct LoginView: View {
     @State private var verificando = false
     @State private var intentos = 0
     @State private var bloqueadoHasta = Date.distantPast
+    @State private var intentoAutomatico = false
+    @AppStorage("faceIDActivo") private var faceIDActivo = false
+    @AppStorage("faceIDPreguntado") private var faceIDPreguntado = false
     @FocusState private var enfoque: Campo?
 
     private enum Campo { case usuario, contrasena }
+
+    private var conBiometria: Bool { faceIDActivo && Biometria.disponible && Llavero.existe }
 
     var body: some View {
         VStack(spacing: 20) {
@@ -168,8 +213,19 @@ struct LoginView: View {
                 .padding(.vertical, 6)
             }
             .buttonStyle(.borderedProminent)
-            .foregroundStyle(Tema.sobreAcento)
+            .foregroundStyle(.white)
             .disabled(verificando)
+
+            if conBiometria {
+                Button {
+                    Task { await entrarConBiometria() }
+                } label: {
+                    Label("Entrar con \(Biometria.nombre)", systemImage: Biometria.icono)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.pastilla(Tema.acento))
+                .disabled(verificando)
+            }
 
             Text(store.errorLogin)
                 .font(.footnote)
@@ -180,9 +236,22 @@ struct LoginView: View {
         }
         .padding(28)
         .frame(maxWidth: 460)
+        .task {
+            guard conBiometria, !intentoAutomatico else { return }
+            intentoAutomatico = true
+            await entrarConBiometria()
+        }
     }
 
-    private func entrar() async {
+    private func entrarConBiometria() async {
+        guard let contexto = await Biometria.autenticar("Entra a Centro de datos"),
+              let credenciales = Llavero.leer(con: contexto) else { return }
+        usuario = credenciales.usuario
+        contrasena = credenciales.contrasena
+        await entrar(conBiometria: true)
+    }
+
+    private func entrar(conBiometria: Bool = false) async {
         if Date() < bloqueadoHasta {
             store.errorLogin = "🔒 Bloqueado. Espera \(Int(bloqueadoHasta.timeIntervalSinceNow.rounded(.up))) segundos."
             return
@@ -199,9 +268,23 @@ struct LoginView: View {
         do {
             try await store.iniciarSesion(usuario: nombre, contrasena: contrasena)
             intentos = 0
+            if faceIDActivo {
+                // Keeps the stored password current when it was typed by hand.
+                if !conBiometria { Llavero.guardar(usuario: nombre, contrasena: contrasena) }
+            } else if !faceIDPreguntado, Biometria.disponible {
+                bloqueo.credencialesParaBiometria = (nombre, contrasena)
+            }
             contrasena = ""
         } catch {
             bloqueo.sesionNueva = false
+            if conBiometria, [17004, 17009].contains((error as NSError).code) {
+                // The password changed elsewhere: the stored one is useless.
+                Llavero.borrar()
+                faceIDActivo = false
+                contrasena = ""
+                store.errorLogin = "Tu contraseña cambió. Entra con la nueva para volver a activar \(Biometria.nombre)."
+                return
+            }
             store.errorLogin = mensaje(para: error)
         }
     }

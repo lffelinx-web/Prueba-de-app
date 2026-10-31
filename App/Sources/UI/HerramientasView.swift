@@ -19,24 +19,21 @@ struct HerramientasView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 12) {
-                botonGrande(.pagos, "Ver pagos", "Ayer, hoy y mañana", icono: "calendar", color: Tema.acento)
-                botonGrande(.recordatorios, "Recordatorios", "Macropesos y crédito disponible por WhatsApp", icono: "iphone.radiowaves.left.and.right", color: Tema.whatsapp)
-                botonGrande(.mensajes(masivos: true), "Mensajes masivos", "Mismo mensaje para muchos contactos", icono: "megaphone.fill", color: Tema.advertencia)
-                botonGrande(.mensajes(masivos: false), "Mensajes personalizados", "Mensaje individualizado por contacto", icono: "envelope.fill", color: Tema.morado)
-            }
-            .padding()
-        }
-        .background(Tema.fondo)
-        .navigationTitle("Herramientas")
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                NavigationLink(value: RutaHerramienta.ajustes) {
-                    Label("Configuración", systemImage: "gearshape")
+            VStack(alignment: .leading, spacing: 0) {
+                grupo("Clientes") {
+                    fila(.pagos, "Ver pagos", "Ayer, hoy y mañana con su avance", icono: "calendar", color: Tema.Seccion.azul)
+                    fila(.recordatorios, "Recordatorios", "Macropesos y crédito disponible", icono: "text.bubble.fill", color: Tema.Seccion.whatsapp, separador: true)
+                }
+                grupo("WhatsApp") {
+                    fila(.mensajes(masivos: true), "Mensajes masivos", "Copiar lista o exportar CSV", icono: "megaphone.fill", color: Tema.Seccion.ambar)
+                    fila(.mensajes(masivos: false), "Mensajes personalizados", "Un WhatsApp por contacto", icono: "envelope.fill", color: Tema.Seccion.morado, separador: true)
                 }
             }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 24)
         }
-        .conNotificaciones()
+        .background(Tema.fondo)
+        .conBarraSuperior()
         .navigationDestination(for: RutaHerramienta.self) { ruta in
             switch ruta {
             case .pagos: VerPagosView()
@@ -52,11 +49,39 @@ struct HerramientasView: View {
         }
     }
 
-    private func botonGrande(_ ruta: RutaHerramienta, _ titulo: String, _ detalle: String, icono: String, color: Color) -> some View {
+    private func grupo<Contenido: View>(_ titulo: String, @ViewBuilder _ contenido: () -> Contenido) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(titulo.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1)
+                .foregroundStyle(Tema.apagado)
+                .padding(.horizontal, 8)
+            VStack(spacing: 0) { contenido() }
+                .background(Tema.superficie, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Tema.borde, lineWidth: 1))
+        }
+        .padding(.top, 22)
+    }
+
+    private func fila(_ ruta: RutaHerramienta, _ titulo: String, _ detalle: String, icono: String, color: Color, separador: Bool = false) -> some View {
         NavigationLink(value: ruta) {
-            OpcionMenu(titulo: titulo, detalle: detalle, icono: icono, color: color)
+            HStack(spacing: 12) {
+                IconoCuadro(sistema: icono, color: color, lado: 42)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(titulo).font(.system(size: 15, weight: .semibold)).foregroundStyle(Tema.texto)
+                    Text(detalle).font(Tipo.detalle).foregroundStyle(Tema.apagado).lineLimit(1)
+                }
+                Spacer(minLength: 6)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Tema.apagado)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .overlay(alignment: .top) {
+            if separador { Rectangle().fill(Tema.borde.opacity(0.6)).frame(height: 1) }
+        }
     }
 }
 
@@ -151,10 +176,10 @@ struct MenuRecordatoriosView: View {
         ScrollView {
             VStack(spacing: 12) {
                 NavigationLink(value: RutaHerramienta.macropesos) {
-                    OpcionMenu(titulo: "Macropesos", detalle: "Disponibles e invitación a ganar más", icono: "banknote", color: Tema.acento)
+                    OpcionMenu(titulo: "Macropesos", detalle: "Disponibles e invitación a ganar más", icono: "banknote.fill", color: Tema.Seccion.azul)
                 }
                 NavigationLink(value: RutaHerramienta.recordatorio(.creditoDisponible)) {
-                    OpcionMenu(titulo: "Crédito disponible", detalle: "Clientes con crédito disponible para renovar", icono: "chart.bar.fill", color: Tema.exito)
+                    OpcionMenu(titulo: "Crédito disponible", detalle: "Clientes con crédito disponible para renovar", icono: "chart.bar.fill", color: Tema.Seccion.verde)
                 }
             }
             .buttonStyle(.plain)
@@ -171,10 +196,10 @@ struct MenuMacropesosView: View {
         ScrollView {
             VStack(spacing: 12) {
                 NavigationLink(value: RutaHerramienta.recordatorio(.macropesosDisponibles)) {
-                    OpcionMenu(titulo: TipoRecordatorio.macropesosDisponibles.titulo, detalle: TipoRecordatorio.macropesosDisponibles.descripcion, icono: "banknote", color: Tema.acento)
+                    OpcionMenu(titulo: TipoRecordatorio.macropesosDisponibles.titulo, detalle: TipoRecordatorio.macropesosDisponibles.descripcion, icono: "banknote.fill", color: Tema.Seccion.azul)
                 }
                 NavigationLink(value: RutaHerramienta.recordatorio(.macropesosInvitacion)) {
-                    OpcionMenu(titulo: TipoRecordatorio.macropesosInvitacion.titulo, detalle: TipoRecordatorio.macropesosInvitacion.descripcion, icono: "gift.fill", color: Tema.morado)
+                    OpcionMenu(titulo: TipoRecordatorio.macropesosInvitacion.titulo, detalle: TipoRecordatorio.macropesosInvitacion.descripcion, icono: "gift.fill", color: Tema.Seccion.morado)
                 }
             }
             .buttonStyle(.plain)
