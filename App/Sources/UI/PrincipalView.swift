@@ -69,11 +69,14 @@ private struct BarraSuperior: ViewModifier {
                         notificaciones = true
                     } label: {
                         let pendientes = store.notificacionesVisibles.filter { !$0.leida }.count
-                        Image(systemName: "bell.fill")
-                            .font(.system(size: 17))
-                            .foregroundStyle(Tema.Seccion.ambar)
+                        Image(systemName: pendientes > 0 ? "bell.badge.fill" : "bell.fill")
+                            .symbolRenderingMode(.monochrome)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Tema.acento)
                             .frame(width: 42, height: 42)
-                            .background(Tema.advertencia.opacity(0.16), in: Circle())
+                            .background(Tema.superficie, in: Circle())
+                            .overlay(Circle().stroke(Tema.borde, lineWidth: 1))
+                            .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
                             .overlay(alignment: .topTrailing) {
                                 if pendientes > 0 {
                                     Text(pendientes > 99 ? "99+" : "\(pendientes)")
@@ -91,12 +94,13 @@ private struct BarraSuperior: ViewModifier {
                     Button {
                         ajustes = true
                     } label: {
-                        Image(systemName: "line.3.horizontal")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Tema.texto)
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Tema.acento)
                             .frame(width: 42, height: 42)
-                            .background(Tema.superficie, in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Tema.borde, lineWidth: 1))
+                            .background(Tema.superficie, in: Circle())
+                            .overlay(Circle().stroke(Tema.borde, lineWidth: 1))
+                            .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
                     }
                     .accessibilityLabel("Ajustes")
                 }

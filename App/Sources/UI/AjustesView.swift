@@ -98,12 +98,31 @@ struct AjustesView: View {
     @State private var contrasena = ""
     @State private var errorContrasena = ""
     @State private var verificando = false
+    @State private var excel: URL?
 
     private var version: String {
         let info = Bundle.main.infoDictionary
         let corta = info?["CFBundleShortVersionString"] as? String ?? "—"
         let compilacion = info?["CFBundleVersion"] as? String ?? "—"
         return "\(corta) (\(compilacion))"
+    }
+
+    private struct ArchivoExcel: Identifiable {
+        let url: URL
+        var id: String { url.path }
+    }
+
+    private func exportarExcel() {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("CentrodeDatos_\(Fecha.hoyISO).xlsx")
+        do {
+            try Excel.baseDeDatos(store.clientes).write(to: url)
+            let activos = store.clientes.filter { $0.categoria == .activos && !$0.inhabilitado }.count
+            let sinRenovar = store.clientes.filter { $0.categoria == .sinrenovar && !$0.inhabilitado }.count
+            store.avisar("✓ Excel listo (\(activos) activos, \(sinRenovar) sin renovar)")
+            excel = url
+        } catch {
+            store.avisar("No se pudo generar el Excel: \(error.localizedDescription)", advertencia: true)
+        }
     }
 
     private func activarBiometria() async {
@@ -152,6 +171,21 @@ struct AjustesView: View {
                 }
             }
             .seccionTema()
+            if store.esAdmin {
+                Section("Administración") {
+                    NavigationLink { UsuariosView() } label: { Label("Usuarios", systemImage: "person.badge.key") }
+                    NavigationLink { AsesoresView() } label: { Label("Asesores", systemImage: "person.2") }
+                    NavigationLink { CatalogosView() } label: { Label("Catálogos", systemImage: "shippingbox") }
+                    NavigationLink { DiasBloqueoView() } label: { Label("Días de bloqueo y enviados", systemImage: "calendar.badge.clock") }
+                    NavigationLink { AuditoriaView() } label: { Label("Auditoría", systemImage: "list.bullet.rectangle") }
+                    Button { exportarExcel() } label: { Label("Exportar base de datos a Excel", systemImage: "tablecells") }
+                }
+                .seccionTema()
+            }
+            Section("Cuenta") {
+                NavigationLink { CambiarContrasenaView() } label: { Label("Cambiar contraseña", systemImage: "key") }
+            }
+            .seccionTema()
             Section("Apariencia") {
                 Toggle(isOn: $temaClaro) {
                     Label("Tema claro", systemImage: "sun.max")
@@ -195,7 +229,7 @@ struct AjustesView: View {
             } header: {
                 Text("Acerca de")
             } footer: {
-                Text("Catálogos, usuarios, asesores, días de bloqueo, auditoría y exportación a Excel llegarán en la siguiente fase. Mientras tanto siguen disponibles en la versión web.")
+                Text("Centro de datos para iPhone. Usa la misma base de datos que la versión web.")
             }
             .seccionTema()
         }
@@ -204,6 +238,9 @@ struct AjustesView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) { Button("Listo") { dismiss() } }
+        }
+        .sheet(item: Binding(get: { excel.map(ArchivoExcel.init) }, set: { excel = $0?.url })) { item in
+            HojaCompartir(elementos: [item.url])
         }
         .sheet(isPresented: $pedirContrasena) {
             NavigationStack {

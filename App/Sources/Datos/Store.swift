@@ -74,6 +74,9 @@ final class Store: ObservableObject {
     @Published private(set) var catalogoCelulares: [String: [String]] = [:]
     @Published private(set) var catalogoProductos: [String: [JSON]] = [:]
     @Published private(set) var diasBloqueo = Envios.DiasBloqueo()
+    /// Key under `ca_users` and `_rev` of each user record, for targeted updates.
+    private(set) var clavesUsuarios: [String: String] = [:]
+    private(set) var revisionesUsuarios: [String: Int] = [:]
 
     let raiz: DatabaseReference
     private var authHandle: AuthStateDidChangeListenerHandle?
@@ -206,6 +209,13 @@ final class Store: ObservableObject {
             for (clave, valor) in config { if let numero = valor.int, numero > 0 { dias.valores[clave] = numero } }
         }
         diasBloqueo = dias
+        clavesUsuarios = [:]
+        revisionesUsuarios = [:]
+        for (clave, valor) in registros {
+            guard let id = valor["id"]?.text else { continue }
+            clavesUsuarios[id] = clave
+            revisionesUsuarios[id] = valor["_rev"]?.int ?? 0
+        }
         usuarios = registros.compactMap { _, valor in
             guard let id = valor["id"]?.text else { return nil }
             return Usuario(id: id, nombre: valor["nombre"]?.text ?? "", username: valor["username"]?.text ?? "", rol: valor["rol"]?.text ?? "usuario")
@@ -346,7 +356,7 @@ final class Store: ObservableObject {
     }
 
     /// Append-only audit entry, as the web app writes it.
-    private func auditar(_ tipo: String, detalles: JSON) async -> Bool {
+    func auditar(_ tipo: String, detalles: JSON) async -> Bool {
         guard let uid = Auth.auth().currentUser?.uid, let acceso else { return false }
         let evento: [String: Any] = [
             "ts": ServerValue.timestamp(),

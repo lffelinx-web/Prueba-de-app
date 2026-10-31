@@ -242,3 +242,24 @@ final class EnviosTests: XCTestCase {
         XCTAssertEqual(Envios.csv([c]), "\u{FEFF}\"Name\",\"Phone\"\n\"Maria de Jesus\",\"5512345678\"")
     }
 }
+
+final class ExcelTests: XCTestCase {
+    func testCRC32() {
+        XCTAssertEqual(Zip.crc32(Data("123456789".utf8)), 0xCBF43926)
+    }
+
+    func testLibroEsZipConDosHojas() {
+        let clientes = [
+            Cliente(raw: ["id": "1", "nombre": "Ana & Cía", "categoria": "activos", "fechaCompra": "2026-10-01", "semanas": "13",
+                          "refs": .array([.object(["nombre": "Beto", "tel": "5512345678"])])]),
+            Cliente(raw: ["id": "2", "nombre": "Carla", "categoria": "sinrenovar"]),
+        ]
+        let datos = Excel.baseDeDatos(clientes)
+        XCTAssertEqual(Array(datos.prefix(4)), [0x50, 0x4B, 0x03, 0x04])
+        let texto = String(decoding: datos, as: UTF8.self)
+        XCTAssertTrue(texto.contains("<sheet name=\"Clientes activos\""))
+        XCTAssertTrue(texto.contains("<sheet name=\"Sin renovar\""))
+        XCTAssertTrue(texto.contains("Ana &amp; Cía"))
+        XCTAssertTrue(texto.contains("  Ref. 1: Beto"))
+    }
+}
