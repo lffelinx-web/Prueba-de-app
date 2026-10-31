@@ -175,3 +175,70 @@ final class ReglasTests: XCTestCase {
         XCTAssertTrue(pares[0].mismoNombre)
     }
 }
+
+final class MensajesTests: XCTestCase {
+    func testNombreYApellido() {
+        XCTAssertEqual(Mensajes.primerNombreApellido("DELIA GARRIDO HERNANDEZ"), "Delia Garrido")
+        let partes = Mensajes.partirNombre("MARIA DE JESUS LOPEZ PEREZ")
+        XCTAssertEqual(partes.nombre, "Maria de Jesus")
+        XCTAssertEqual(partes.apellido, "Lopez")
+        XCTAssertEqual(Mensajes.primerNombreApellido("JUAN DE LA CRUZ"), "Juan de la Cruz")
+    }
+
+    func testRecordatorioDePago() {
+        var plantilla = PlantillaRecordatorio()
+        plantilla.saludo = "Hola, "
+        plantilla.lugar = "te escribimos de Macropréstamos."
+        plantilla.cuerpo = "Tu [NUMERO DE PAGO] pago vence hoy"
+        let cliente = Cliente(raw: ["id": "1", "nombre": "DELIA GARRIDO HERNANDEZ"])
+        let texto = Mensajes.recordatorio(plantilla, tipo: .pagosHoy, cliente: cliente, extras: ExtrasMensaje(numPago: "2°"))
+        XCTAssertEqual(texto, "Hola, *Delia Garrido*\n\nte escribimos de Macropréstamos.\n\nTu 2° pago vence hoy")
+    }
+
+    func testSinMacropesosSeQuitaLaLinea() {
+        var plantilla = MensajePredeterminado()
+        plantilla.cuerpo = "Promoción especial\nTienes [macropesos] disponibles"
+        let cliente = Cliente(raw: ["id": "1", "nombre": "Ana Ruiz"])
+        let texto = Mensajes.predeterminado(plantilla, cliente: cliente, cuerpo: .promociones)
+        XCTAssertEqual(texto, "*Ana Ruiz*\n\nPromoción especial")
+    }
+
+    func testArticuloSegunProducto() {
+        var plantilla = MensajePredeterminado()
+        plantilla.advCreditos = true
+        plantilla.cuerpoCreditosAdv = "Llévate el [tipo de producto] [modelo] con [enganche]"
+        let cliente = Cliente(raw: ["id": "1", "nombre": "Ana Ruiz"])
+        let extras = ExtrasMensaje(lineaCredito: "8000", enganche: "1500", tipoProducto: "Pantallas", modelo: "TV 50")
+        let texto = Mensajes.predeterminado(plantilla, cliente: cliente, cuerpo: .creditos, extras: extras)
+        XCTAssertTrue(texto.hasSuffix("Llévate la pantalla TV 50 con $1,500.00"), texto)
+    }
+}
+
+final class EnviosTests: XCTestCase {
+    func testContactadoRecienteQuedaBloqueado() {
+        let ahora = Double(Fecha.milisegundos())
+        let lista = [
+            Cliente(raw: ["id": "a", "nombre": "Ana", "tel": "1111111111", "categoria": "prospectos", "tieneWA": true, "ultimoEnvioMasivo": .number(ahora)]),
+            Cliente(raw: ["id": "b", "nombre": "Beto", "tel": "2222222222", "categoria": "prospectos", "tieneWA": true]),
+            Cliente(raw: ["id": "c", "nombre": "Beto otra vez", "tel": "2222222222", "categoria": "prospectos", "tieneWA": true]),
+        ]
+        let resultado = Envios.lista(.prospectos, cuerpo: .promociones, en: lista, dias: Envios.DiasBloqueo())
+        XCTAssertEqual(resultado.contactos.map(\.id), ["b"])
+        XCTAssertEqual(resultado.bloqueados, 1)
+        XCTAssertEqual(Envios.bloqueados(.prospectos, en: lista, dias: Envios.DiasBloqueo()).map(\.id), ["a"])
+    }
+
+    func testPagosDelDia() {
+        let c = Cliente(raw: [
+            "id": "1", "nombre": "Ana", "categoria": "activos", "semanas": "13",
+            "fechaCompra": .string(Fecha.iso(Fecha.sumar(dias: -14, a: Fecha.hoy))),
+        ]).normalizado()
+        XCTAssertEqual(Envios.pagos(enDia: 0, de: [c]).first?.numero, 2)
+        XCTAssertTrue(Envios.pagos(enDia: 1, de: [c]).isEmpty)
+    }
+
+    func testCsvConPrimerNombre() {
+        let c = Cliente(raw: ["id": "1", "nombre": "MARIA DE JESUS LOPEZ", "tel": "5512345678"])
+        XCTAssertEqual(Envios.csv([c]), "\u{FEFF}\"Name\",\"Phone\"\n\"Maria de Jesus\",\"5512345678\"")
+    }
+}

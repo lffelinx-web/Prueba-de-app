@@ -9,8 +9,8 @@ struct PrincipalView: View {
                 .tabItem { Label("Inicio", systemImage: "house.fill") }
             NavigationStack { BaseDatosView().conDestinos() }
                 .tabItem { Label("Base de datos", systemImage: "cylinder.split.1x2.fill") }
-            NavigationStack { AjustesView() }
-                .tabItem { Label("Ajustes", systemImage: "gearshape.fill") }
+            NavigationStack { HerramientasView().conDestinos() }
+                .tabItem { Label("Herramientas", systemImage: "wrench.and.screwdriver.fill") }
         }
     }
 }
@@ -87,18 +87,18 @@ struct InicioView: View {
             Section {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(saludo).font(.title2.bold())
-                    Text(Fecha.larga(Date()).capitalizedFirst).foregroundStyle(.secondary)
+                    Text(Fecha.larga(Date()).capitalizedFirst).foregroundStyle(Tema.apagado)
                 }
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4))
             }
 
-            seccion("Pagos pendientes hoy", icono: "dollarsign.circle.fill", color: Paleta.advertencia, cantidad: pagos.count) {
+            seccion("Pagos pendientes hoy", "Pagos de clientes activos que vencen hoy", icono: "dollarsign", color: Paleta.advertencia, cantidad: pagos.count) {
                 ForEach(pagos) { item in
                     FilaPago(cliente: item.cliente, pago: item.pago, atrasado: false, confirmacion: $confirmacion)
                 }
             }
-            seccion("PR aprobadas pendientes", icono: "checkmark.seal.fill", color: Paleta.exito, cantidad: prs.count) {
+            seccion("PR aprobadas pendientes", "Vigencia de 30 días desde solicitud", icono: "checkmark.seal.fill", color: Paleta.exito, cantidad: prs.count) {
                 ForEach(prs) { c in
                     NavigationLink(value: Ruta.cliente(c.id)) {
                         FilaSimple(cliente: c, detalle: "\(c.tel.isEmpty ? "Sin tel." : c.tel) · PR: \(c.numPR ?? "—")") {
@@ -107,12 +107,12 @@ struct InicioView: View {
                     }
                 }
             }
-            seccion("Liquidaciones esta semana", icono: "banknote.fill", color: .teal, cantidad: liquidaciones.count) {
+            seccion("Liquidaciones esta semana", "Créditos que vencen de lunes a domingo", icono: "banknote.fill", color: Tema.info, cantidad: liquidaciones.count) {
                 ForEach(liquidaciones) { c in
                     NavigationLink(value: Ruta.cliente(c.id)) {
                         VStack(alignment: .leading, spacing: 4) {
                             FilaSimple(cliente: c, detalle: "\(c.tel.isEmpty ? "Sin tel." : c.tel) · Vence: \(Fecha.corta(c.fechaFin))") {
-                                Text(c.sl ?? "—").font(.caption.monospaced()).foregroundStyle(.tint)
+                                ChipSL(c.sl ?? "—")
                             }
                             if tieneOtroActivo(c) {
                                 Text("⚠️ Tiene otro crédito activo").font(.caption2).foregroundStyle(Paleta.advertencia)
@@ -121,7 +121,7 @@ struct InicioView: View {
                     }
                 }
             }
-            seccion("Seguimiento a clientes", icono: "list.clipboard.fill", color: Paleta.doble, cantidad: seguimiento.count) {
+            seccion("Seguimiento a clientes", "Clientes marcados para seguimiento", icono: "list.clipboard.fill", color: Paleta.doble, cantidad: seguimiento.count) {
                 ForEach(seguimiento) { c in
                     NavigationLink(value: Ruta.cliente(c.id)) {
                         VStack(alignment: .leading, spacing: 4) {
@@ -129,7 +129,7 @@ struct InicioView: View {
                                 Etiqueta(c.seguimiento?.tipo ?? "", color: Paleta.advertencia)
                             }
                             if let notas = c.seguimiento?.notas, !notas.isEmpty {
-                                Text(notas).font(.caption).foregroundStyle(.secondary)
+                                Text(notas).font(.caption).foregroundStyle(Tema.apagado)
                             }
                         }
                     }
@@ -144,12 +144,13 @@ struct InicioView: View {
                     }
                 }
             }
-            seccion("Pagos atrasados", icono: "alarm.fill", color: Paleta.peligro, cantidad: atrasados.count, vacio: "Sin pagos atrasados") {
+            seccion("Pagos atrasados", "Primeros 4 pagos no confirmados", icono: "alarm.fill", color: Paleta.peligro, cantidad: atrasados.count, vacio: "Sin pagos atrasados") {
                 ForEach(atrasados) { item in
                     FilaPago(cliente: item.cliente, pago: item.pago, atrasado: true, confirmacion: $confirmacion)
                 }
             }
         }
+        .fondoTema()
         .navigationTitle("Centro de datos")
         .navigationBarTitleDisplayMode(.inline)
         .conNotificaciones()
@@ -170,26 +171,29 @@ struct InicioView: View {
         return store.clientes.contains { $0.id == otro && $0.categoria == .activos }
     }
 
-    private func seccion<Contenido: View>(_ titulo: String, icono: String, color: Color, cantidad: Int, vacio: String = "Sin registros",
+    /// One of the web's dashboard cards: tinted icon, title, subtitle and count.
+    private func seccion<Contenido: View>(_ titulo: String, _ subtitulo: String, icono: String, color: Color, cantidad: Int, vacio: String = "Sin registros",
                                          @ViewBuilder contenido: () -> Contenido) -> some View {
         Section {
             if cantidad == 0 {
-                Text(vacio).foregroundStyle(.secondary)
+                Text(vacio).font(.subheadline).foregroundStyle(Tema.apagado)
             } else {
                 contenido()
             }
         } header: {
-            HStack {
-                Label(titulo, systemImage: icono).foregroundStyle(color)
+            HStack(spacing: 10) {
+                IconoCuadro(sistema: icono, color: color)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(titulo).font(.subheadline.weight(.semibold)).foregroundStyle(Tema.texto)
+                    Text(subtitulo).font(.caption).foregroundStyle(Tema.apagado)
+                }
                 Spacer()
-                Text("\(cantidad)")
-                    .font(.caption.bold())
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(color.opacity(0.15), in: Capsule())
-                    .foregroundStyle(color)
+                Etiqueta("\(cantidad)", color: color)
             }
+            .textCase(nil)
+            .padding(.vertical, 4)
         }
+        .seccionTema()
     }
 }
 
@@ -210,11 +214,11 @@ struct FilaPago: View {
                         Text(cliente.nombre).font(.headline)
                         HStack(spacing: 8) {
                             Label(cliente.tel.isEmpty ? "Sin tel." : cliente.tel, systemImage: "phone").font(.caption)
-                            if let sl = cliente.sl { Text(sl).font(.caption.monospaced()).foregroundStyle(.tint) }
+                                .foregroundStyle(Tema.texto)
+                            if let sl = cliente.sl { ChipSL(sl) }
                         }
-                        .foregroundStyle(.secondary)
                         if atrasado {
-                            Text("Pago \(pago.num) de 4 · \(Fecha.corta(pago.fecha))").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                            Text("Pago \(pago.num) de 4 · \(Fecha.corta(pago.fecha))").font(.caption.weight(.semibold)).foregroundStyle(Tema.apagado)
                         }
                     }
                     Spacer()
@@ -234,7 +238,7 @@ struct FilaPago: View {
                 } label: {
                     Label("Confirmar pago", systemImage: "checkmark")
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.pastilla(Tema.exito))
                 if atrasado {
                     Button(role: .destructive) {
                         confirmacion = Confirmacion(titulo: "Marcar como no pagado", mensaje: "¿Confirmar que el pago \(pago.num) de 4 de \(cliente.nombre) no fue realizado?", boton: "No pagado", destructivo: true) {
@@ -243,11 +247,10 @@ struct FilaPago: View {
                     } label: {
                         Label("No pagado", systemImage: "xmark")
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.pastilla(Tema.peligro))
                 }
-                BotonWhatsApp(cliente: cliente, compacto: true)
+                BotonRecordatorioPago(cliente: cliente, pago: pago, atrasado: atrasado || arrastre)
             }
-            .font(.subheadline)
         }
         .padding(.vertical, 4)
     }
@@ -262,7 +265,7 @@ struct FilaSimple<Accesorio: View>: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(cliente.nombre).font(.body.weight(.medium))
-                Text(detalle).font(.caption).foregroundStyle(.secondary)
+                Text(detalle).font(.caption).foregroundStyle(Tema.apagado)
             }
             Spacer()
             accesorio()
@@ -272,4 +275,43 @@ struct FilaSimple<Accesorio: View>: View {
 
 extension String {
     var capitalizedFirst: String { prefix(1).uppercased() + dropFirst() }
+}
+
+/// SL number in the web's blue monospaced chip.
+struct ChipSL: View {
+    let texto: String
+
+    init(_ texto: String) { self.texto = texto }
+
+    var body: some View {
+        Text(texto)
+            .font(.caption.monospaced().weight(.bold))
+            .foregroundStyle(Tema.acento)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2)
+            .background(Tema.acento.opacity(0.12), in: Capsule())
+            .overlay(Capsule().stroke(Tema.acento.opacity(0.35), lineWidth: 1))
+    }
+}
+
+/// WhatsApp for a due payment: with the "Pagos de hoy" / "Pagos atrasados" reminder when the user
+/// has that template, otherwise just the chat, like the web.
+struct BotonRecordatorioPago: View {
+    @EnvironmentObject private var store: Store
+    let cliente: Cliente
+    let pago: Pago
+    let atrasado: Bool
+
+    var body: some View {
+        let tipo = atrasado ? TipoRecordatorio.pagosAtrasados : .pagosHoy
+        if cliente.tieneTelefonoWA, let plantilla = store.plantillaRecordatorio(tipo),
+           let url = WhatsApp.url(cliente.tel, mensaje: Mensajes.recordatorio(plantilla, tipo: tipo, cliente: cliente, extras: ExtrasMensaje(numPago: Mensajes.ordinal(pago.num)))) {
+            Link(destination: url) {
+                Label("Recordar", systemImage: "message.fill")
+            }
+            .buttonStyle(.pastilla(Tema.whatsapp))
+        } else {
+            BotonWhatsApp(cliente: cliente, compacto: true)
+        }
+    }
 }

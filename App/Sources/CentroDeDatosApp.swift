@@ -41,11 +41,15 @@ struct CentroDeDatosApp: App {
 private struct AppRaiz: View {
     @StateObject private var store = Store()
     @StateObject private var bloqueo = Bloqueo()
+    /// Same preference as the web app's `ca_theme`: dark unless the user picks light.
+    @AppStorage("temaClaro") private var temaClaro = false
 
     var body: some View {
         RootView()
             .environmentObject(store)
             .environmentObject(bloqueo)
+            .tint(Tema.acento)
+            .preferredColorScheme(temaClaro ? .light : .dark)
     }
 }
 
@@ -58,6 +62,7 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
+            Tema.fondo.ignoresSafeArea()
             switch store.fase {
             case .cargando:
                 ProgressView()
@@ -129,8 +134,8 @@ struct LoginView: View {
                 .font(.system(size: 52))
                 .foregroundStyle(.tint)
             VStack(spacing: 4) {
-                Text("Centro de datos").font(.largeTitle.bold())
-                Text("Base de registros").foregroundStyle(.secondary)
+                Text("Sistema de datos").font(.largeTitle.bold())
+                Text("Base de registros").foregroundStyle(Tema.apagado)
             }
             VStack(spacing: 12) {
                 TextField("Usuario", text: $usuario)
@@ -140,13 +145,16 @@ struct LoginView: View {
                     .focused($enfoque, equals: .usuario)
                     .submitLabel(.next)
                     .onSubmit { enfoque = .contrasena }
+                Divider().overlay(Tema.borde)
                 SecureField("Contraseña", text: $contrasena)
                     .textContentType(.password)
                     .focused($enfoque, equals: .contrasena)
                     .submitLabel(.go)
                     .onSubmit { Task { await entrar() } }
             }
-            .textFieldStyle(.roundedBorder)
+            .padding(12)
+            .background(Tema.superficie, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Tema.borde, lineWidth: 1))
 
             Button {
                 Task { await entrar() }
@@ -158,6 +166,7 @@ struct LoginView: View {
                 .padding(.vertical, 6)
             }
             .buttonStyle(.borderedProminent)
+            .foregroundStyle(Tema.sobreAcento)
             .disabled(verificando)
 
             Text(store.errorLogin)

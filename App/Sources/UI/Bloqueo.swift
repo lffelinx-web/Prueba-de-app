@@ -133,7 +133,7 @@ struct PantallaPin: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
+        .background(Tema.fondo)
     }
 
     private var teclado: some View {
@@ -148,8 +148,9 @@ struct PantallaPin: View {
                             Text(tecla)
                                 .font(tecla.count == 1 ? .title : .body.weight(.semibold))
                                 .frame(width: 74, height: 74)
-                                .foregroundStyle(tecla == "Salir" || tecla == "⌫" ? Paleta.peligro : Color.primary)
-                                .background(Color(.secondarySystemBackground), in: Circle())
+                                .foregroundStyle(tecla == "Salir" || tecla == "⌫" ? Paleta.peligro : Tema.texto)
+                                .background(Tema.superficie, in: Circle())
+                                .overlay(Circle().stroke(Tema.borde, lineWidth: 1))
                         }
                         .buttonStyle(.plain)
                     }

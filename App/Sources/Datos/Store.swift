@@ -35,6 +35,11 @@ struct Notificacion: Identifiable, Equatable {
     let leida: Bool
 }
 
+struct Accesorio: Hashable {
+    let nombre: String
+    let precio: Double
+}
+
 struct Aviso: Identifiable, Equatable {
     let id = UUID()
     let texto: String
@@ -64,6 +69,11 @@ final class Store: ObservableObject {
     @Published var revisarPagosDe: String?
     @Published private(set) var pinHash: String?
     @Published private(set) var pinCargado = false
+    @Published private(set) var plantillasRecordatorio: [String: JSON] = [:]
+    @Published private(set) var mensajesPredeterminados: [String: JSON] = [:]
+    @Published private(set) var catalogoCelulares: [String: [String]] = [:]
+    @Published private(set) var catalogoProductos: [String: [JSON]] = [:]
+    @Published private(set) var diasBloqueo = Envios.DiasBloqueo()
 
     let raiz: DatabaseReference
     private var authHandle: AuthStateDidChangeListenerHandle?
@@ -115,6 +125,11 @@ final class Store: ObservableObject {
         guardando = false
         pinHash = nil
         pinCargado = false
+        plantillasRecordatorio = [:]
+        mensajesPredeterminados = [:]
+        catalogoCelulares = [:]
+        catalogoProductos = [:]
+        diasBloqueo = Envios.DiasBloqueo()
         errorLogin = mensaje
         fase = .login
     }
@@ -173,7 +188,14 @@ final class Store: ObservableObject {
     }
 
     private func recibirUsuarios(_ snap: DataSnapshot) {
-        usuarios = hijos(snap).compactMap { _, valor in
+        let registros = hijos(snap)
+        // The blocking days live on the administrator's own user record.
+        var dias = Envios.DiasBloqueo()
+        if let admin = registros.first(where: { $0.1["rol"]?.text == "admin" })?.1, let config = admin["_diasBloqueoCat"]?.object {
+            for (clave, valor) in config { if let numero = valor.int, numero > 0 { dias.valores[clave] = numero } }
+        }
+        diasBloqueo = dias
+        usuarios = registros.compactMap { _, valor in
             guard let id = valor["id"]?.text else { return nil }
             return Usuario(id: id, nombre: valor["nombre"]?.text ?? "", username: valor["username"]?.text ?? "", rol: valor["rol"]?.text ?? "usuario")
         }
@@ -217,6 +239,24 @@ final class Store: ObservableObject {
             self.mantenimientoAutomatico()
         }
         escuchar("ca_clientes") { [weak self] snap in self?.recibirClientes(snap) }
+        escuchar("ca_recordatorios_plantillas/\(usuarioId)") { [weak self] snap in
+            self?.plantillasRecordatorio = JSON(firebase: snap.value).object ?? [:]
+        }
+        escuchar("ca_mensajes_pred/\(usuarioId)") { [weak self] snap in
+            self?.mensajesPredeterminados = JSON(firebase: snap.value).object ?? [:]
+        }
+        escuchar("ca_catalogo_celulares") { [weak self] snap in
+            var catalogo: [String: [String]] = [:]
+            for (marca, modelos) in JSON(firebase: snap.value).object ?? [:] {
+                catalogo[marca] = (modelos.list ?? []).compactMap { $0["nombre"]?.text ?? $0.text }
+            }
+            self?.catalogoCelulares = catalogo
+        }
+        escuchar("ca_catalogo_productos") { [weak self] snap in
+            var catalogo = (JSON(firebase: snap.value).object ?? [:]).mapValues { $0.list ?? [] }
+            for categoria in Store.categoriasProducto where catalogo[categoria] == nil { catalogo[categoria] = [] }
+            self?.catalogoProductos = catalogo
+        }
 
         raiz.child("ca_pins").child(usuarioId).observeSingleEvent(of: .value) { [weak self] snap in
             self?.pinHash = snap.value as? String
@@ -422,5 +462,56 @@ final class Store: ObservableObject {
     func cliente(_ id: String?) -> Cliente? {
         guard let id else { return nil }
         return clientes.first { $0.id == id }
+    }
+
+    // MARK: - Templates and catalogues
+
+    static let categoriasProducto = ["iPhone", "Pantallas", "Bicis", "Motos", "Accesorios"]
+
+    /// The user's reminder template, or nil when it has not been written yet.
+    func plantillaRecordatorio(_ tipo: TipoRecordatorio) -> PlantillaRecordatorio? {
+        let plantilla = PlantillaRecordatorio(plantillasRecordatorio[tipo.rawValue])
+        return plantilla.tieneContenido ? plantilla : nil
+    }
+
+    func mensajePredeterminado(_ categoria: CategoriaMensaje) -> MensajePredeterminado? {
+        guard let valor = mensajesPredeterminados[categoria.rawValue] else { return nil }
+        return MensajePredeterminado(valor)
+    }
+
+    func guardarPlantilla(_ plantilla: PlantillaRecordatorio, tipo: TipoRecordatorio) async -> Bool {
+        guard let usuario else { return false }
+        do {
+            try await escribir(raiz.child("ca_recordatorios_plantillas").child(usuario.id).child(tipo.rawValue), plantilla.json(tipo: tipo).firebaseValue)
+            avisar("✓ Plantilla guardada")
+            return true
+        } catch {
+            avisar("Error al guardar. Intenta de nuevo.", advertencia: true)
+            return false
+        }
+    }
+
+    func guardarMensaje(_ mensaje: MensajePredeterminado, categoria: CategoriaMensaje) async -> Bool {
+        guard let usuario else { return false }
+        do {
+            try await escribir(raiz.child("ca_mensajes_pred").child(usuario.id).child(categoria.rawValue), mensaje.json.firebaseValue)
+            avisar("✓ Plantilla guardada")
+            return true
+        } catch {
+            avisar("Error al guardar. Intenta de nuevo.", advertencia: true)
+            return false
+        }
+    }
+
+    /// Accessories with a price, offered in the advanced "macropesos disponibles" reminder.
+    var accesoriosConPrecio: [Accesorio] {
+        (catalogoProductos["Accesorios"] ?? []).compactMap { modelo in
+            guard let nombre = modelo["nombre"]?.text, let precio = modelo["precio"]?.number, precio > 0 else { return nil }
+            return Accesorio(nombre: nombre, precio: precio)
+        }
+    }
+
+    func modelos(de categoria: String) -> [String] {
+        (catalogoProductos[categoria] ?? []).compactMap { $0["nombre"]?.text ?? $0.text }
     }
 }

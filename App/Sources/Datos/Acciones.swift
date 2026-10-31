@@ -212,6 +212,15 @@ enum Texto {
         return salida.replacingOccurrences(of: #"on\w+="#, with: "", options: [.regularExpression, .caseInsensitive])
     }
 
+    /// Same cleanup without trimming, for template parts like "Hola, " whose spaces matter.
+    static func limpioConEspacios(_ texto: String) -> String {
+        var salida = texto
+        for patron in ["<script", "</script", "javascript:", "<iframe", "<object", "<embed", "<link", "<meta"] {
+            salida = salida.replacingOccurrences(of: patron, with: "", options: .caseInsensitive)
+        }
+        return salida.replacingOccurrences(of: #"on\w+="#, with: "", options: [.regularExpression, .caseInsensitive])
+    }
+
     static func soloDigitos(_ texto: String) -> String {
         texto.filter(\.isNumber)
     }

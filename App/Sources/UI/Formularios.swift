@@ -80,6 +80,7 @@ private struct BarraFormulario: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .fondoTema()
             .navigationTitle(titulo)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -293,6 +294,7 @@ struct PasoAltaView: View {
                     }
                 }
             }
+            .fondoTema()
             .navigationTitle(titulo)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -552,6 +554,7 @@ struct FormularioPR: View {
                     }
                 }
             }
+            .fondoTema()
             .navigationTitle("Posible coincidencia")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

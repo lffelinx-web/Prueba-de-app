@@ -25,31 +25,33 @@ struct DetalleView: View {
 
     private func contenido(_ c: Cliente) -> some View {
         List {
-            datos(c)
+            datos(c).seccionTema()
             if c.categoria == .activos || c.categoria == .sinrenovar {
-                estatus(c)
-                pagos(c)
-                prAdjunta(c)
+                estatus(c).seccionTema()
+                pagos(c).seccionTema()
+                prAdjunta(c).seccionTema()
             }
-            referencias(c)
+            referencias(c).seccionTema()
             if let curp = c.curp, c.categoria == .activos || c.categoria == .sinrenovar || c.categoria == .fraude {
                 Section("Código QR — CURP") {
                     VStack(spacing: 8) {
                         CodigoQR(texto: curp)
-                        Text(curp).font(.caption.monospaced()).foregroundStyle(.secondary)
+                        Text(curp).font(.caption.monospaced()).foregroundStyle(Tema.apagado)
                     }
                     .frame(maxWidth: .infinity)
                 }
+                .seccionTema()
             }
             if c.categoria == .activos || c.categoria == .sinrenovar {
-                macro(c)
+                macro(c).seccionTema()
             }
             if c.categoria != .fraude, c.categoria != .prRechazadas {
-                seguimiento(c)
+                seguimiento(c).seccionTema()
             }
-            otroFinanciamiento(c)
-            acciones(c)
+            otroFinanciamiento(c).seccionTema()
+            acciones(c).seccionTema()
         }
+        .fondoTema()
         .navigationTitle(c.nombre)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -439,6 +441,7 @@ struct HistorialView: View {
                     }
                 }
             }
+            .fondoTema()
             .navigationTitle("Historial — \(cliente.nombre)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -486,6 +489,7 @@ struct PagosPasadosView: View {
                     }
                 }
             }
+            .fondoTema()
             .navigationTitle("Confirmar pagos pasados")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

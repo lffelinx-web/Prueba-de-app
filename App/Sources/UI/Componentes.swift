@@ -2,29 +2,32 @@ import CoreImage.CIFilterBuiltins
 import SwiftUI
 
 enum Paleta {
-    static let exito = Color.green
-    static let advertencia = Color.orange
-    static let peligro = Color.red
-    static let macro = Color.accentColor
-    static let doble = Color.purple
+    static let exito = Tema.exito
+    static let advertencia = Tema.advertencia
+    static let peligro = Tema.peligro
+    static let macro = Tema.acento
+    static let doble = Tema.morado
 }
 
 struct Etiqueta: View {
     let texto: String
-    var color: Color = .secondary
+    var color: Color = Tema.apagado
 
-    init(_ texto: String, color: Color = .secondary) {
+    init(_ texto: String, color: Color = Tema.apagado) {
         self.texto = texto
         self.color = color
     }
 
+    /// The web's `.badge`: tinted pill with a matching border.
     var body: some View {
         Text(texto)
             .font(.caption2.weight(.semibold))
-            .padding(.horizontal, 7)
+            .lineLimit(1)
+            .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .foregroundStyle(color)
-            .background(color.opacity(0.15), in: Capsule())
+            .background(color.opacity(0.14), in: Capsule())
+            .overlay(Capsule().stroke(color.opacity(0.35), lineWidth: 1))
     }
 }
 
@@ -49,9 +52,9 @@ enum WhatsApp {
     static func url(_ tel: String, mensaje: String) -> URL? {
         let numero = Texto.soloDigitos(tel)
         let completo = numero.count == 10 ? "52" + numero : numero
-        var partes = URLComponents(string: "https://wa.me/" + completo)
-        partes?.queryItems = [URLQueryItem(name: "text", value: mensaje)]
-        return partes?.url
+        // Like encodeURIComponent, so "+", "&" and line breaks reach WhatsApp intact.
+        let texto = mensaje.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? ""
+        return URL(string: "https://wa.me/\(completo)?text=\(texto)")
     }
 }
 
@@ -64,12 +67,11 @@ struct BotonWhatsApp: View {
             Link(destination: url) {
                 Label(compacto ? "WA" : "WhatsApp", systemImage: "message.fill")
             }
-            .buttonStyle(.bordered)
-            .tint(.green)
+            .buttonStyle(.pastilla(Tema.whatsapp))
         } else if !compacto {
             Label("Sin WhatsApp", systemImage: "nosign")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .font(.caption)
+                .foregroundStyle(Tema.apagado)
         }
     }
 }

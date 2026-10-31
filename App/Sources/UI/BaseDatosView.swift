@@ -10,27 +10,27 @@ struct BaseDatosView: View {
             LazyVGrid(columns: columnas, spacing: 12) {
                 ForEach(Categoria.allCases) { categoria in
                     NavigationLink(value: Ruta.categoria(categoria)) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Image(systemName: categoria.icono)
-                                .font(.title2)
-                                .foregroundStyle(color(categoria))
+                        VStack(spacing: 8) {
+                            IconoCuadro(sistema: categoria.icono, color: color(categoria), lado: 44)
                             Text(categoria.titulo)
-                                .font(.headline)
-                                .foregroundStyle(.primary)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Tema.texto)
+                                .multilineTextAlignment(.center)
                             Text("\(Reglas.conteo(categoria, en: store.clientes)) reg.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Tema.apagado)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(Tema.superficie, in: RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Tema.borde, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                 }
             }
             .padding()
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Tema.fondo)
         .navigationTitle("Base de datos")
         .conNotificaciones()
         .overlay {
@@ -40,9 +40,9 @@ struct BaseDatosView: View {
 
     private func color(_ categoria: Categoria) -> Color {
         switch categoria {
-        case .activos: return .accentColor
+        case .activos: return Tema.acento
         case .sinrenovar: return Paleta.doble
-        case .prospectos: return .teal
+        case .prospectos: return Tema.info
         case .prAprobadas: return Paleta.exito
         case .prRechazadas: return Paleta.peligro
         case .fraude: return Paleta.advertencia
@@ -126,23 +126,25 @@ struct CategoriaView: View {
                 Section {
                     ForEach(duplicados) { par in
                         HStack {
-                            Text("⚠️ " + par.mensaje).font(.footnote)
+                            Text("⚠️ " + par.mensaje).font(.footnote).foregroundStyle(Tema.advertencia)
                             Spacer()
                             Button("Revisar") { revision = par }
-                                .buttonStyle(.bordered)
-                                .tint(Paleta.advertencia)
+                                .buttonStyle(.pastilla(Tema.advertencia))
                         }
+                        .tarjeta(borde: Tema.advertencia.opacity(0.5))
+                        .filaTarjeta()
                     }
                 }
             }
             if lista.isEmpty {
                 ContentUnavailableView(busqueda.isEmpty ? "Sin registros" : "Sin resultados", systemImage: categoria.icono)
-                    .listRowBackground(Color.clear)
+                    .filaTarjeta()
             }
             ForEach(lista) { c in
                 NavigationLink(value: Ruta.cliente(c.id)) {
                     FilaCliente(cliente: c)
                 }
+                .filaTarjeta()
                 .swipeActions(edge: .trailing) {
                     if store.esAdmin {
                         Button(role: .destructive) {
@@ -180,6 +182,8 @@ struct CategoriaView: View {
                 }
             }
         }
+        .listStyle(.plain)
+        .fondoTema()
         .navigationTitle(categoria.titulo)
         .searchable(text: $busqueda, prompt: "Buscar nombre, teléfono, SL o PR")
         .autocorrectionDisabled()
@@ -249,7 +253,7 @@ struct FilaCliente: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(c.nombre)
                     .font(.headline)
-                    .foregroundStyle(c.inhabilitado ? .secondary : .primary)
+                    .foregroundStyle(c.inhabilitado ? Tema.apagado : Tema.texto)
                 if c.dobleFinId != nil, c.categoria == .activos { Etiqueta("2 créditos", color: Paleta.doble) }
                 Spacer()
                 etiquetas
@@ -286,14 +290,14 @@ struct FilaCliente: View {
                 EmptyView()
             }
         }
-        .padding(.vertical, 2)
-        .listRowBackground(fondo)
+        .tarjeta(borde: resaltado ?? Tema.borde, fondo: resaltado.map { $0.opacity(0.08) } ?? Tema.superficie)
     }
 
-    private var fondo: Color? {
+    /// Late clients get the web's yellow card; suspended "sin renovar" ones a softer one.
+    private var resaltado: Color? {
         let c = cliente
-        if c.categoria == .sinrenovar, c.suspendido { return Paleta.advertencia.opacity(0.08) }
-        if (c.categoria == .activos || c.categoria == .prospectos), enAtraso { return Paleta.advertencia.opacity(0.1) }
+        if c.categoria == .sinrenovar, c.suspendido { return Paleta.advertencia.opacity(0.6) }
+        if (c.categoria == .activos || c.categoria == .prospectos), enAtraso { return Paleta.advertencia }
         return nil
     }
 
@@ -355,12 +359,12 @@ struct FilaCliente: View {
             Spacer()
             if let derecha {
                 Text(derecha)
-                    .font(mono ? .caption.monospaced() : .caption)
-                    .foregroundStyle(mono ? Color.accentColor : colorDerecha)
+                    .font(mono ? .caption.monospaced().weight(.bold) : .caption)
+                    .foregroundStyle(mono ? Tema.acento : colorDerecha)
             }
         }
         .font(.caption)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Tema.apagado)
     }
 }
 
@@ -424,6 +428,7 @@ struct FiltrosView: View {
                     }
                 }
             }
+            .fondoTema()
             .navigationTitle("Filtros")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

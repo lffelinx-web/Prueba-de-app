@@ -21,11 +21,13 @@ struct NotificacionesView: View {
                 }
                 ForEach(store.notificacionesVisibles) { n in
                     fila(n)
+                        .seccionTema()
                         .swipeActions {
                             Button("Eliminar", role: .destructive) { store.eliminarNotificacion(n.id) }
                         }
                 }
             }
+            .fondoTema()
             .navigationTitle("Notificaciones")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -88,6 +90,7 @@ struct NotificacionesView: View {
 struct AjustesView: View {
     @EnvironmentObject private var store: Store
     @EnvironmentObject private var bloqueo: Bloqueo
+    @AppStorage("temaClaro") private var temaClaro = false
     @State private var confirmarSalida = false
 
     private var version: String {
@@ -104,16 +107,30 @@ struct AjustesView: View {
                     HStack(spacing: 14) {
                         Text(usuario.iniciales)
                             .font(.headline)
+                            .foregroundStyle(Tema.acento)
                             .frame(width: 46, height: 46)
-                            .background(Color.accentColor.opacity(0.2), in: Circle())
+                            .background(Tema.acento.opacity(0.15), in: Circle())
                         VStack(alignment: .leading) {
                             Text(usuario.nombre).font(.headline)
                             Text("@\(usuario.username) · \(store.esAdmin ? "Administrador" : "Asesor")")
-                                .font(.subheadline).foregroundStyle(.secondary)
+                                .font(.subheadline).foregroundStyle(Tema.apagado)
                         }
                     }
                 }
+                .seccionTema()
             }
+            Section("Mensajes") {
+                NavigationLink(value: RutaHerramienta.plantillas) {
+                    Label("Plantillas de WhatsApp", systemImage: "text.bubble")
+                }
+            }
+            .seccionTema()
+            Section("Apariencia") {
+                Toggle(isOn: $temaClaro) {
+                    Label("Tema claro", systemImage: "sun.max")
+                }
+            }
+            .seccionTema()
             Section("Seguridad") {
                 Button {
                     bloqueo.bloquear()
@@ -126,17 +143,20 @@ struct AjustesView: View {
                     Label("Cerrar sesión", systemImage: "rectangle.portrait.and.arrow.right")
                 }
             }
+            .seccionTema()
             Section {
                 LabeledContent("Versión", value: version)
                 LabeledContent("Registros", value: "\(store.clientes.count)")
             } header: {
                 Text("Acerca de")
             } footer: {
-                Text("Las herramientas de pagos, recordatorios y mensajes de WhatsApp, catálogos, usuarios, asesores, auditoría y exportación a Excel llegarán en las siguientes fases. Mientras tanto siguen disponibles en la versión web.")
+                Text("Catálogos, usuarios, asesores, días de bloqueo, auditoría y exportación a Excel llegarán en la siguiente fase. Mientras tanto siguen disponibles en la versión web.")
             }
+            .seccionTema()
         }
-        .navigationTitle("Ajustes")
-        .conNotificaciones()
+        .fondoTema()
+        .navigationTitle("Configuración")
+        .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog("¿Cerrar sesión?", isPresented: $confirmarSalida, titleVisibility: .visible) {
             Button("Cerrar sesión", role: .destructive) {
                 bloqueo.reiniciar()
