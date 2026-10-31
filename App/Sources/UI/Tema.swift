@@ -27,6 +27,25 @@ enum Tema {
     }
 }
 
+/// Fixed type scale so cards keep their layout regardless of the system text size.
+enum Tipo {
+    /// Screen greeting.
+    static let saludo = Font.system(size: 22, weight: .bold)
+    /// Card headers ("Pagos pendientes hoy").
+    static let encabezado = Font.system(size: 15, weight: .semibold)
+    /// Client name, the most important line of a row.
+    static let nombre = Font.system(size: 15, weight: .semibold)
+    /// Regular data (dates, advisor, amounts).
+    static let dato = Font.system(size: 13)
+    /// Phone and SL numbers.
+    static let numero = Font.system(size: 13, design: .monospaced)
+    /// Secondary details and subtitles.
+    static let detalle = Font.system(size: 12)
+    /// Badges and pill buttons.
+    static let etiqueta = Font.system(size: 11, weight: .semibold)
+    static let boton = Font.system(size: 12, weight: .semibold)
+}
+
 extension UIColor {
     convenience init(hex: UInt32) {
         self.init(red: CGFloat((hex >> 16) & 0xff) / 255, green: CGFloat((hex >> 8) & 0xff) / 255, blue: CGFloat(hex & 0xff) / 255, alpha: 1)
@@ -71,9 +90,11 @@ struct EstiloPastilla: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
+            .font(Tipo.boton)
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
+            .padding(.horizontal, 10)
+            .frame(minHeight: 32)
             .foregroundStyle(relleno ? Tema.sobreAcento : color)
             .background(relleno ? color : color.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(color.opacity(relleno ? 0 : 0.45), lineWidth: 1))
@@ -95,7 +116,7 @@ struct TituloSeccion: View {
 
     var body: some View {
         Text(texto.uppercased())
-            .font(.caption.weight(.semibold))
+            .font(Tipo.etiqueta)
             .tracking(1)
             .foregroundStyle(Tema.acento)
     }
@@ -113,5 +134,47 @@ struct IconoCuadro: View {
             .foregroundStyle(color)
             .frame(width: lado, height: lado)
             .background(color.opacity(0.15), in: RoundedRectangle(cornerRadius: lado * 0.28))
+    }
+}
+
+/// Phone number on one line, never broken.
+struct LineaTelefono: View {
+    let tel: String
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "phone.fill").font(.system(size: 10)).foregroundStyle(Tema.apagado)
+            Text(tel.isEmpty ? "Sin tel." : tel).font(Tipo.numero).foregroundStyle(Tema.texto)
+        }
+        .lineLimit(1)
+        .fixedSize()
+    }
+}
+
+/// Client name: one line, slightly shrunk before truncating.
+struct NombreCliente: View {
+    let nombre: String
+    var apagado = false
+
+    var body: some View {
+        Text(nombre)
+            .font(Tipo.nombre)
+            .foregroundStyle(apagado ? Tema.apagado : Tema.texto)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .truncationMode(.tail)
+    }
+}
+
+/// A navigation row inside a plain list without the system chevron outside the card.
+struct EnlaceSinFlecha<Contenido: View>: View {
+    let valor: Ruta
+    @ViewBuilder let contenido: () -> Contenido
+
+    var body: some View {
+        ZStack {
+            NavigationLink(value: valor) { EmptyView() }.opacity(0)
+            contenido()
+        }
     }
 }

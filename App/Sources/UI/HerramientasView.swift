@@ -110,20 +110,20 @@ struct VerPagosView: View {
             }
             ForEach(pagos) { item in
                 let c = item.cliente
-                NavigationLink(value: Ruta.cliente(c.id)) {
+                EnlaceSinFlecha(valor: .cliente(c.id)) {
                     VStack(alignment: .leading, spacing: 7) {
                         HStack {
-                            Text(c.nombre).font(.headline).lineLimit(1)
+                            NombreCliente(nombre: c.nombre)
                             Spacer()
                             Etiqueta("P\(item.numero)/\(item.total)", color: Tema.advertencia)
                         }
                         HStack(spacing: 6) {
-                            Label(c.tel.isEmpty ? "—" : c.tel, systemImage: "phone").font(.caption).foregroundStyle(Tema.texto)
+                            LineaTelefono(tel: c.tel)
                             ChipSL(c.sl ?? "—")
                         }
                         HStack {
                             Text("💰 \(Dinero.texto(c.macropesos))")
-                                .font(.subheadline.monospaced().weight(.semibold))
+                                .font(Tipo.numero.weight(.semibold))
                                 .foregroundStyle(c.macropesos == nil ? Tema.apagado : Tema.acento)
                             Spacer()
                             BotonWhatsApp(cliente: c, compacto: true)
@@ -275,14 +275,14 @@ struct ListaRecordatorioView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(c.nombre).font(.subheadline.weight(.semibold)).lineLimit(1)
+                    NombreCliente(nombre: c.nombre)
                     switch tipo {
                     case .macropesosDisponibles:
-                        Text("💰 \(Dinero.texto(c.macropesos ?? 0)) · \(c.sl ?? "—")").font(.caption.monospaced()).foregroundStyle(Tema.acento)
+                        Text("💰 \(Dinero.texto(c.macropesos ?? 0)) · \(c.sl ?? "—")").font(Tipo.detalle.monospaced()).foregroundStyle(Tema.acento)
                     case .creditoDisponible:
-                        Text("\(c.sl ?? "—") · \(c.semanasRestantes ?? 0) sem.").font(.caption.monospaced()).foregroundStyle(Tema.acento)
+                        Text("\(c.sl ?? "—") · \(c.semanasRestantes ?? 0) sem.").font(Tipo.detalle.monospaced()).foregroundStyle(Tema.acento)
                     default:
-                        Text(c.sl ?? "—").font(.caption.monospaced()).foregroundStyle(Tema.apagado)
+                        Text(c.sl ?? "—").font(Tipo.detalle.monospaced()).foregroundStyle(Tema.apagado)
                     }
                 }
                 Spacer()
@@ -325,7 +325,7 @@ struct ListaRecordatorioView: View {
                 if let elegido = store.accesoriosConPrecio.first(where: { $0.nombre == accesorios[c.id] }) {
                     let resto = max(0, elegido.precio - (c.macropesos ?? 0))
                     Text(resto > 0 ? "Diferencia: \(Dinero.texto(resto))" : "✓ Cubierto totalmente por sus macropesos")
-                        .font(.caption.monospaced())
+                        .font(Tipo.detalle.monospaced())
                         .foregroundStyle(resto > 0 ? Tema.advertencia : Tema.acento)
                 }
             }
@@ -372,7 +372,7 @@ struct BloqueadosRecordatorioView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(c.nombre).font(.subheadline.weight(.medium))
                                 Text("⏱ Hace \(dias) día\(dias == 1 ? "" : "s") · \(restantes) día\(restantes == 1 ? "" : "s") restante\(restantes == 1 ? "" : "s")")
-                                    .font(.caption.monospaced()).foregroundStyle(Tema.apagado)
+                                    .font(Tipo.detalle.monospaced()).foregroundStyle(Tema.apagado)
                             }
                             Spacer()
                             if store.esAdmin {

@@ -182,8 +182,8 @@ struct ListaEnvioView: View {
                     .font(.title3)
                     .foregroundStyle(elegido ? Tema.acento : Tema.apagado)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(c.tel).font(.subheadline.monospaced().weight(.medium)).foregroundStyle(Tema.texto)
-                    Text(c.nombre).font(.caption).foregroundStyle(Tema.apagado).lineLimit(1)
+                    Text(c.tel).font(Tipo.numero.weight(.medium)).foregroundStyle(Tema.texto)
+                    Text(c.nombre).font(Tipo.detalle).foregroundStyle(Tema.apagado).lineLimit(1)
                 }
             }
         }
@@ -346,7 +346,7 @@ struct ListaEnvioView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(c.nombre).font(.subheadline.weight(.semibold)).lineLimit(1)
+                    NombreCliente(nombre: c.nombre)
                     infoSecundaria(c)
                 }
                 Spacer()
@@ -380,15 +380,15 @@ struct ListaEnvioView: View {
     private func infoSecundaria(_ c: Cliente) -> some View {
         switch (categoria, cuerpoPara(c)) {
         case (_, .macropesos):
-            Text("💰 \(Dinero.texto(c.macropesos ?? 0))").font(.caption.monospaced()).foregroundStyle(Tema.acento)
+            Text("💰 \(Dinero.texto(c.macropesos ?? 0))").font(Tipo.detalle.monospaced()).foregroundStyle(Tema.acento)
         case (_, .linea):
-            Text(c.sl ?? "—").font(.caption.monospaced()).foregroundStyle(Tema.acento)
+            Text(c.sl ?? "—").font(Tipo.detalle.monospaced()).foregroundStyle(Tema.acento)
         case (.prAprobadas, let tipo):
-            Text("\(c.numPR ?? "—") · \(tipo == .financing ? "💼 Financing" : "💳 Créditos")").font(.caption.monospaced()).foregroundStyle(Tema.acento)
+            Text("\(c.numPR ?? "—") · \(tipo == .financing ? "💼 Financing" : "💳 Créditos")").font(Tipo.detalle.monospaced()).foregroundStyle(Tema.acento)
         case (.porfinalizar, _):
-            Text("\(c.sl ?? "—") · 💰 \(Dinero.texto(c.macropesos ?? 0))").font(.caption.monospaced()).foregroundStyle(Tema.acento)
+            Text("\(c.sl ?? "—") · 💰 \(Dinero.texto(c.macropesos ?? 0))").font(Tipo.detalle.monospaced()).foregroundStyle(Tema.acento)
         default:
-            Text(c.tel).font(.caption.monospaced()).foregroundStyle(Tema.apagado)
+            Text(c.tel).font(Tipo.detalle.monospaced()).foregroundStyle(Tema.apagado)
         }
     }
 
@@ -546,7 +546,7 @@ struct BloqueadosMensajeView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(c.nombre).font(.subheadline.weight(.medium))
-                                Text(c.tel).font(.caption.monospaced()).foregroundStyle(Tema.apagado)
+                                Text(c.tel).font(Tipo.detalle.monospaced()).foregroundStyle(Tema.apagado)
                                 Text("Enviado hace \(hace) día\(hace == 1 ? "" : "s") · faltan \(dias - hace) día\(dias - hace == 1 ? "" : "s")")
                                     .font(.caption2).foregroundStyle(Tema.advertencia)
                             }

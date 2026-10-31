@@ -21,8 +21,9 @@ struct Etiqueta: View {
     /// The web's `.badge`: tinted pill with a matching border.
     var body: some View {
         Text(texto)
-            .font(.caption2.weight(.semibold))
+            .font(Tipo.etiqueta)
             .lineLimit(1)
+            .fixedSize()
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .foregroundStyle(color)
@@ -70,7 +71,7 @@ struct BotonWhatsApp: View {
             .buttonStyle(.pastilla(Tema.whatsapp))
         } else if !compacto {
             Label("Sin WhatsApp", systemImage: "nosign")
-                .font(.caption)
+                .font(Tipo.detalle)
                 .foregroundStyle(Tema.apagado)
         }
     }

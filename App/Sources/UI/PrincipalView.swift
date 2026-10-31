@@ -74,6 +74,7 @@ private struct BotonNotificaciones: ViewModifier {
 struct InicioView: View {
     @EnvironmentObject private var store: Store
     @State private var confirmacion: Confirmacion?
+    @State private var plegadas: Set<String> = []
 
     var body: some View {
         let clientes = store.clientes
@@ -83,74 +84,60 @@ struct InicioView: View {
         let seguimiento = Reglas.enSeguimiento(clientes)
         let atrasados = Reglas.atrasados(clientes)
 
-        List {
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(saludo).font(.title2.bold())
-                    Text(Fecha.larga(Date()).capitalizedFirst).foregroundStyle(Tema.apagado)
+                    Text(saludo).font(Tipo.saludo).foregroundStyle(Tema.texto)
+                    Text(Fecha.larga(Date()).capitalizedFirst).font(Tipo.dato).foregroundStyle(Tema.apagado)
                 }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4))
-            }
+                .padding(.horizontal, 4)
+                .padding(.bottom, 4)
 
-            seccion("Pagos pendientes hoy", "Pagos de clientes activos que vencen hoy", icono: "dollarsign", color: Paleta.advertencia, cantidad: pagos.count) {
-                ForEach(pagos) { item in
-                    FilaPago(cliente: item.cliente, pago: item.pago, atrasado: false, confirmacion: $confirmacion)
+                panel("pagos", "Pagos pendientes hoy", "Vencen hoy", icono: "dollarsign", color: Tema.advertencia, cantidad: pagos.count) {
+                    ForEach(pagos) { item in
+                        FilaPago(cliente: item.cliente, pago: item.pago, atrasado: false, confirmacion: $confirmacion)
+                    }
                 }
-            }
-            seccion("PR aprobadas pendientes", "Vigencia de 30 días desde solicitud", icono: "checkmark.seal.fill", color: Paleta.exito, cantidad: prs.count) {
-                ForEach(prs) { c in
-                    NavigationLink(value: Ruta.cliente(c.id)) {
-                        FilaSimple(cliente: c, detalle: "\(c.tel.isEmpty ? "Sin tel." : c.tel) · PR: \(c.numPR ?? "—")") {
-                            Etiqueta("Aprobada", color: Paleta.exito)
+                panel("atrasados", "Pagos atrasados", "Primeros 4 pagos sin confirmar", icono: "alarm.fill", color: Tema.peligro, cantidad: atrasados.count, vacio: "Sin pagos atrasados") {
+                    ForEach(atrasados) { item in
+                        FilaPago(cliente: item.cliente, pago: item.pago, atrasado: true, confirmacion: $confirmacion)
+                    }
+                }
+                panel("pr", "PR aprobadas pendientes", "Vigencia de 30 días", icono: "checkmark.seal.fill", color: Tema.exito, cantidad: prs.count) {
+                    ForEach(prs) { c in
+                        filaCompacta(c, detalle: "PR \(c.numPR ?? "—")") {
+                            BotonWhatsApp(cliente: c, compacto: true)
                         }
                     }
                 }
-            }
-            seccion("Liquidaciones esta semana", "Créditos que vencen de lunes a domingo", icono: "banknote.fill", color: Tema.info, cantidad: liquidaciones.count) {
-                ForEach(liquidaciones) { c in
-                    NavigationLink(value: Ruta.cliente(c.id)) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            FilaSimple(cliente: c, detalle: "\(c.tel.isEmpty ? "Sin tel." : c.tel) · Vence: \(Fecha.corta(c.fechaFin))") {
-                                ChipSL(c.sl ?? "—")
-                            }
-                            if tieneOtroActivo(c) {
-                                Text("⚠️ Tiene otro crédito activo").font(.caption2).foregroundStyle(Paleta.advertencia)
-                            }
+                panel("liq", "Liquidaciones esta semana", "De lunes a domingo", icono: "banknote.fill", color: Tema.info, cantidad: liquidaciones.count) {
+                    ForEach(liquidaciones) { c in
+                        filaCompacta(c, detalle: "Vence \(Fecha.corta(c.fechaFin))", aviso: tieneOtroActivo(c) ? "Tiene otro crédito activo" : nil) {
+                            ChipSL(c.sl ?? "—")
                         }
                     }
                 }
-            }
-            seccion("Seguimiento a clientes", "Clientes marcados para seguimiento", icono: "list.clipboard.fill", color: Paleta.doble, cantidad: seguimiento.count) {
-                ForEach(seguimiento) { c in
-                    NavigationLink(value: Ruta.cliente(c.id)) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            FilaSimple(cliente: c, detalle: "\(c.tel.isEmpty ? "Sin tel." : c.tel) · \(c.seguimiento?.tipo ?? "")") {
-                                Etiqueta(c.seguimiento?.tipo ?? "", color: Paleta.advertencia)
-                            }
-                            if let notas = c.seguimiento?.notas, !notas.isEmpty {
-                                Text(notas).font(.caption).foregroundStyle(Tema.apagado)
-                            }
-                        }
-                    }
-                    .swipeActions {
-                        if store.esAdmin {
-                            Button("Quitar seg.", role: .destructive) {
-                                confirmacion = Confirmacion(titulo: "Quitar seguimiento", mensaje: "¿Quitar el seguimiento de \(c.nombre)?", boton: "Quitar", destructivo: true) {
-                                    await store.quitarSeguimiento(c.id)
+                panel("seg", "Seguimiento a clientes", "Marcados para seguimiento", icono: "list.clipboard.fill", color: Tema.morado, cantidad: seguimiento.count) {
+                    ForEach(seguimiento) { c in
+                        filaCompacta(c, detalle: [c.seguimiento?.tipo, c.seguimiento?.notas].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")) {
+                            if store.esAdmin {
+                                Button {
+                                    confirmacion = Confirmacion(titulo: "Quitar seguimiento", mensaje: "¿Quitar el seguimiento de \(c.nombre)?", boton: "Quitar", destructivo: true) {
+                                        await store.quitarSeguimiento(c.id)
+                                    }
+                                } label: {
+                                    Image(systemName: "xmark")
                                 }
+                                .buttonStyle(.pastilla(Tema.peligro))
                             }
                         }
                     }
                 }
             }
-            seccion("Pagos atrasados", "Primeros 4 pagos no confirmados", icono: "alarm.fill", color: Paleta.peligro, cantidad: atrasados.count, vacio: "Sin pagos atrasados") {
-                ForEach(atrasados) { item in
-                    FilaPago(cliente: item.cliente, pago: item.pago, atrasado: true, confirmacion: $confirmacion)
-                }
-            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
         }
-        .fondoTema()
+        .background(Tema.fondo)
         .navigationTitle("Centro de datos")
         .navigationBarTitleDisplayMode(.inline)
         .conNotificaciones()
@@ -171,33 +158,80 @@ struct InicioView: View {
         return store.clientes.contains { $0.id == otro && $0.categoria == .activos }
     }
 
-    /// One of the web's dashboard cards: tinted icon, title, subtitle and count.
-    private func seccion<Contenido: View>(_ titulo: String, _ subtitulo: String, icono: String, color: Color, cantidad: Int, vacio: String = "Sin registros",
-                                         @ViewBuilder contenido: () -> Contenido) -> some View {
-        Section {
-            if cantidad == 0 {
-                Text(vacio).font(.subheadline).foregroundStyle(Tema.apagado)
-            } else {
-                contenido()
-            }
-        } header: {
-            HStack(spacing: 10) {
-                IconoCuadro(sistema: icono, color: color)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(titulo).font(.subheadline.weight(.semibold)).foregroundStyle(Tema.texto)
-                    Text(subtitulo).font(.caption).foregroundStyle(Tema.apagado)
+    /// Name and phone on the left, one accessory on the right, a detail line underneath.
+    private func filaCompacta<Accesorio: View>(_ c: Cliente, detalle: String, aviso: String? = nil, @ViewBuilder accesorio: () -> Accesorio) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            NavigationLink(value: Ruta.cliente(c.id)) {
+                VStack(alignment: .leading, spacing: 3) {
+                    NombreCliente(nombre: c.nombre)
+                    HStack(spacing: 8) {
+                        LineaTelefono(tel: c.tel)
+                        if !detalle.isEmpty {
+                            Text(detalle).font(Tipo.detalle).foregroundStyle(Tema.apagado).lineLimit(1)
+                        }
+                    }
+                    if let aviso {
+                        Label(aviso, systemImage: "exclamationmark.triangle.fill").font(Tipo.detalle).foregroundStyle(Tema.advertencia)
+                    }
                 }
-                Spacer()
-                Etiqueta("\(cantidad)", color: color)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .textCase(nil)
-            .padding(.vertical, 4)
+            .buttonStyle(.plain)
+            accesorio()
         }
-        .seccionTema()
+        .padding(.vertical, 10)
+    }
+
+    /// One of the web's dashboard cards: its header and its rows inside the same card, foldable.
+    private func panel<Contenido: View>(_ clave: String, _ titulo: String, _ subtitulo: String, icono: String, color: Color, cantidad: Int,
+                                        vacio: String = "Sin registros", @ViewBuilder contenido: () -> Contenido) -> some View {
+        let abierta = !plegadas.contains(clave)
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    if abierta { plegadas.insert(clave) } else { plegadas.remove(clave) }
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    IconoCuadro(sistema: icono, color: color, lado: 32)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(titulo).font(Tipo.encabezado).foregroundStyle(Tema.texto).lineLimit(1)
+                        Text(subtitulo).font(Tipo.detalle).foregroundStyle(Tema.apagado).lineLimit(1)
+                    }
+                    Spacer(minLength: 6)
+                    Etiqueta("\(cantidad)", color: cantidad > 0 ? color : Tema.apagado)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Tema.apagado)
+                        .rotationEffect(.degrees(abierta ? 0 : -90))
+                }
+                .padding(12)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if abierta {
+                Divider().overlay(Tema.borde)
+                if cantidad == 0 {
+                    Text(vacio)
+                        .font(Tipo.dato)
+                        .foregroundStyle(Tema.apagado)
+                        .padding(12)
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        contenido()
+                    }
+                    .padding(.horizontal, 12)
+                }
+            }
+        }
+        .background(Tema.superficie, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Tema.borde, lineWidth: 1))
     }
 }
 
-/// A payment due today or late, with its actions.
+/// A payment due today or late: who, which payment, and the three actions.
 struct FilaPago: View {
     @EnvironmentObject private var store: Store
     let cliente: Cliente
@@ -207,69 +241,56 @@ struct FilaPago: View {
 
     var body: some View {
         let arrastre = !atrasado && cliente.pagoHoyConAtraso
+        let urgente = atrasado || arrastre
         VStack(alignment: .leading, spacing: 8) {
             NavigationLink(value: Ruta.cliente(cliente.id)) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(cliente.nombre).font(.headline)
-                        HStack(spacing: 8) {
-                            Label(cliente.tel.isEmpty ? "Sin tel." : cliente.tel, systemImage: "phone").font(.caption)
-                                .foregroundStyle(Tema.texto)
-                            if let sl = cliente.sl { ChipSL(sl) }
-                        }
-                        if atrasado {
-                            Text("Pago \(pago.num) de 4 · \(Fecha.corta(pago.fecha))").font(.caption.weight(.semibold)).foregroundStyle(Tema.apagado)
-                        }
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        NombreCliente(nombre: cliente.nombre)
+                        Spacer(minLength: 4)
+                        Etiqueta("Pago \(pago.num)/4", color: urgente ? Tema.peligro : Tema.advertencia)
                     }
-                    Spacer()
-                    Etiqueta("Pago \(pago.num)/4", color: atrasado || arrastre ? Paleta.peligro : Paleta.advertencia)
+                    HStack(spacing: 8) {
+                        LineaTelefono(tel: cliente.tel)
+                        if let sl = cliente.sl { ChipSL(sl) }
+                        Spacer(minLength: 0)
+                    }
+                    if atrasado {
+                        Text("Vencía el \(Fecha.corta(pago.fecha))").font(Tipo.detalle).foregroundStyle(Tema.peligro)
+                    } else if arrastre {
+                        Label("No confirmó el pago anterior", systemImage: "exclamationmark.triangle.fill")
+                            .font(Tipo.detalle)
+                            .foregroundStyle(Tema.peligro)
+                    }
                 }
+                .contentShape(Rectangle())
             }
-            if arrastre {
-                Text("⚠️ Pago muy atrasado · Este cliente no confirmó el pago anterior")
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(Paleta.peligro)
-            }
-            HStack {
+            .buttonStyle(.plain)
+
+            HStack(spacing: 8) {
                 Button {
                     confirmacion = Confirmacion(titulo: "Confirmar pago", mensaje: "¿Confirmar el pago \(pago.num) de 4 de \(cliente.nombre)?", boton: "Confirmar") {
                         await store.confirmarPagos([pago.num], de: cliente.id)
                     }
                 } label: {
-                    Label("Confirmar pago", systemImage: "checkmark")
+                    Label("Confirmar", systemImage: "checkmark").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.pastilla(Tema.exito))
                 if atrasado {
-                    Button(role: .destructive) {
+                    Button {
                         confirmacion = Confirmacion(titulo: "Marcar como no pagado", mensaje: "¿Confirmar que el pago \(pago.num) de 4 de \(cliente.nombre) no fue realizado?", boton: "No pagado", destructivo: true) {
                             await store.marcarNoPagado(pago.num, de: cliente.id)
                         }
                     } label: {
-                        Label("No pagado", systemImage: "xmark")
+                        Label("No pagó", systemImage: "xmark").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.pastilla(Tema.peligro))
                 }
-                BotonRecordatorioPago(cliente: cliente, pago: pago, atrasado: atrasado || arrastre)
+                BotonRecordatorioPago(cliente: cliente, pago: pago, atrasado: urgente)
             }
         }
-        .padding(.vertical, 4)
-    }
-}
-
-struct FilaSimple<Accesorio: View>: View {
-    let cliente: Cliente
-    let detalle: String
-    @ViewBuilder let accesorio: () -> Accesorio
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(cliente.nombre).font(.body.weight(.medium))
-                Text(detalle).font(.caption).foregroundStyle(Tema.apagado)
-            }
-            Spacer()
-            accesorio()
-        }
+        .padding(.vertical, 10)
+        .overlay(alignment: .bottom) { Divider().overlay(Tema.borde) }
     }
 }
 
@@ -285,8 +306,10 @@ struct ChipSL: View {
 
     var body: some View {
         Text(texto)
-            .font(.caption.monospaced().weight(.bold))
+            .font(.system(size: 11, weight: .bold, design: .monospaced))
             .foregroundStyle(Tema.acento)
+            .lineLimit(1)
+            .fixedSize()
             .padding(.horizontal, 7)
             .padding(.vertical, 2)
             .background(Tema.acento.opacity(0.12), in: Capsule())
@@ -307,11 +330,14 @@ struct BotonRecordatorioPago: View {
         if cliente.tieneTelefonoWA, let plantilla = store.plantillaRecordatorio(tipo),
            let url = WhatsApp.url(cliente.tel, mensaje: Mensajes.recordatorio(plantilla, tipo: tipo, cliente: cliente, extras: ExtrasMensaje(numPago: Mensajes.ordinal(pago.num)))) {
             Link(destination: url) {
-                Label("Recordar", systemImage: "message.fill")
+                Label("Recordar", systemImage: "message.fill").frame(maxWidth: .infinity)
             }
             .buttonStyle(.pastilla(Tema.whatsapp))
-        } else {
-            BotonWhatsApp(cliente: cliente, compacto: true)
+        } else if cliente.tieneTelefonoWA, let url = WhatsApp.url(cliente.tel) {
+            Link(destination: url) {
+                Label("WhatsApp", systemImage: "message.fill").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.pastilla(Tema.whatsapp))
         }
     }
 }

@@ -50,6 +50,8 @@ private struct AppRaiz: View {
             .environmentObject(bloqueo)
             .tint(Tema.acento)
             .preferredColorScheme(temaClaro ? .light : .dark)
+            // Large system text sizes broke the cards; data rows use the fixed scale in `Tipo`.
+            .dynamicTypeSize(.xSmall ... .large)
     }
 }
 

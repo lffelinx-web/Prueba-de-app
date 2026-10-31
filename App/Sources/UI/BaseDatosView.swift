@@ -141,7 +141,7 @@ struct CategoriaView: View {
                     .filaTarjeta()
             }
             ForEach(lista) { c in
-                NavigationLink(value: Ruta.cliente(c.id)) {
+                EnlaceSinFlecha(valor: .cliente(c.id)) {
                     FilaCliente(cliente: c)
                 }
                 .filaTarjeta()
@@ -249,43 +249,35 @@ struct FilaCliente: View {
 
     var body: some View {
         let c = cliente
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(c.nombre)
-                    .font(.headline)
-                    .foregroundStyle(c.inhabilitado ? Tema.apagado : Tema.texto)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                NombreCliente(nombre: c.nombre, apagado: c.inhabilitado)
                 if c.dobleFinId != nil, c.categoria == .activos { Etiqueta("2 créditos", color: Paleta.doble) }
-                Spacer()
+                Spacer(minLength: 4)
                 etiquetas
             }
             switch c.categoria {
             case .activos?:
-                linea("phone", c.tel, derecha: c.sl, mono: true)
-                linea("calendar", "Compra: \(Fecha.corta(c.fechaCompra))", derecha: Dinero.texto(c.macropesos), colorDerecha: Paleta.macro)
+                datos(c.sl, izquierda: "Compra \(Fecha.corta(c.fechaCompra))", derecha: c.macropesos.map { "💰 " + Dinero.texto($0) }, colorDerecha: Tema.acento)
             case .sinrenovar?:
-                linea("phone", c.tel, derecha: c.sl, mono: true)
-                linea("person", c.asesor ?? "—", derecha: "Vence: \(Fecha.corta(c.fechaFin))")
+                datos(c.sl, izquierda: c.asesor ?? "Sin asesor", derecha: "Vence \(Fecha.corta(c.fechaFin))")
                 if let pr = Reglas.prAdjuntaActiva(c) {
                     Text("📋 \(pr["numPR"]?.text ?? "—") · \(pr["tipocred"]?.text ?? "—")")
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
+                        .font(Tipo.detalle.monospaced())
+                        .foregroundStyle(Tema.apagado)
                 }
             case .prospectos?:
                 if !c.inhabilitado {
-                    linea("phone", c.tel, derecha: c.origen ?? "Manual")
-                    linea("calendar", "Ref.: \(Fecha.corta(c.fechaRef))", derecha: c.asesor ?? "—")
+                    datos(nil, izquierda: "Ref. \(Fecha.corta(c.fechaRef)) · \(c.asesor ?? "Sin asesor")", derecha: c.origen ?? "Manual")
                 }
             case .prAprobadas?, .prRechazadas?:
-                linea("phone", c.tel, derecha: c.numPR, mono: true)
                 let restantes = diasRestantesPR(c)
-                linea("person", c.asesor ?? "—", derecha: "\(restantes)d restantes", colorDerecha: restantes <= 5 ? Paleta.peligro : .secondary)
-                linea("calendar", "Solicitud: \(Fecha.corta(c.fechaSolicitud))", derecha: c.tipocred)
+                datos(c.numPR, izquierda: "\(c.asesor ?? "—") · \(c.tipocred ?? "—")", derecha: "\(restantes) días", colorDerecha: restantes <= 5 ? Tema.peligro : Tema.apagado)
                 if let detalles = c.detallesPR {
-                    Text("📝 " + detalles).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    Text(detalles).font(Tipo.detalle).foregroundStyle(Tema.apagado).lineLimit(2)
                 }
             case .fraude?:
-                linea("phone", c.tel.isEmpty ? "Sin tel." : c.tel, derecha: c.sl, mono: true)
-                linea("calendar", Fecha.corta(c.fechaCompra), derecha: c.tipo)
+                datos(c.sl, izquierda: "\(Fecha.corta(c.fechaCompra)) · \(c.tipo ?? "—")", derecha: nil)
             case nil:
                 EmptyView()
             }
@@ -353,18 +345,22 @@ struct FilaCliente: View {
         return (c.categoria == .prAprobadas ? 30 : 90) - dias
     }
 
-    private func linea(_ icono: String, _ texto: String, derecha: String? = nil, mono: Bool = false, colorDerecha: Color = .secondary) -> some View {
-        HStack {
-            Label(texto.isEmpty ? "—" : texto, systemImage: icono)
-            Spacer()
-            if let derecha {
-                Text(derecha)
-                    .font(mono ? .caption.monospaced().weight(.bold) : .caption)
-                    .foregroundStyle(mono ? Tema.acento : colorDerecha)
+    /// Phone and folio on the first line, then a detail on the left and a highlighted value on the right.
+    private func datos(_ folio: String?, izquierda: String, derecha: String?, colorDerecha: Color = Tema.apagado) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                LineaTelefono(tel: cliente.tel)
+                Spacer(minLength: 4)
+                if let folio { ChipSL(folio) }
+            }
+            HStack(spacing: 8) {
+                Text(izquierda).font(Tipo.detalle).foregroundStyle(Tema.apagado).lineLimit(1)
+                Spacer(minLength: 4)
+                if let derecha {
+                    Text(derecha).font(Tipo.detalle.weight(.semibold)).foregroundStyle(colorDerecha).lineLimit(1).fixedSize()
+                }
             }
         }
-        .font(.caption)
-        .foregroundStyle(Tema.apagado)
     }
 }
 
