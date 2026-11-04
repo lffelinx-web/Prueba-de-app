@@ -12,13 +12,6 @@ struct MenuMensajesView: View {
                         OpcionMenu(titulo: categoria.titulo, detalle: categoria.descripcion, icono: categoria.icono, color: color(categoria))
                     }
                 }
-                if !masivos {
-                    NavigationLink {
-                        PlantillasView(recordatorios: false)
-                    } label: {
-                        OpcionMenu(titulo: "Plantillas de mensajes", detalle: "Textos de cada categoría", icono: "text.bubble.fill", color: Tema.Seccion.cian)
-                    }
-                }
             }
             .buttonStyle(.plain)
             .padding()
@@ -26,6 +19,13 @@ struct MenuMensajesView: View {
         .background(Tema.fondo)
         .navigationTitle(masivos ? "Mensajes masivos" : "Mensajes personalizados")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if !masivos {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { PlantillasView(recordatorios: false) } label: { Text("Plantillas") }
+                }
+            }
+        }
     }
 
     private func destino(_ categoria: CategoriaMensaje) -> RutaHerramienta {
@@ -107,6 +107,16 @@ struct ListaEnvioView: View {
         return "\(tipo) — \(categoria.titulo)\(sub)"
     }
 
+    /// Short bar title; the full context goes in the header card.
+    private var tituloCorto: String {
+        switch cuerpo {
+        case .macropesos?: return "Macropesos"
+        case .linea?: return "Línea de crédito"
+        case .promociones?: return "Promociones"
+        default: return categoria.titulo
+        }
+    }
+
     var body: some View {
         let visibles = contactosVisibles
         let inicio = min(pagina * porPagina, visibles.count)
@@ -115,7 +125,6 @@ struct ListaEnvioView: View {
 
         List {
             encabezado(total: visibles.count, inicio: inicio, enPagina: enPagina, plantilla: plantilla)
-                .seccionTema()
 
             if enPagina.isEmpty {
                 Text(busqueda.isEmpty ? "Sin registros disponibles en esta categoría" : "Sin coincidencias para \"\(busqueda)\"")
@@ -139,16 +148,10 @@ struct ListaEnvioView: View {
                 }
             }
 
-            if bloqueados > 0 {
-                Button("👁 Ver \(bloqueados) contacto\(bloqueados == 1 ? "" : "s") bloqueado\(bloqueados == 1 ? "" : "s")") { verBloqueados = true }
-                    .buttonStyle(.pastilla())
-                    .frame(maxWidth: .infinity)
-                    .filaTarjeta()
-            }
         }
         .listStyle(.plain)
         .fondoTema()
-        .navigationTitle(titulo)
+        .navigationTitle(tituloCorto)
         .navigationBarTitleDisplayMode(.inline)
         .modifier(BuscadorOpcional(activo: masivos && categoria == .prospectos, texto: $busqueda))
         .onChange(of: busqueda) { _, _ in pagina = 0 }
@@ -240,34 +243,85 @@ struct ListaEnvioView: View {
 
     // MARK: Header and mass actions
 
+    /// Count, page size, blocked notice and the advanced switch in one compact card.
     @ViewBuilder
     private func encabezado(total: Int, inicio: Int, enPagina: [Cliente], plantilla: MensajePredeterminado?) -> some View {
-        Section {
-            if bloqueados > 0 {
-                Text("📅 \(bloqueados) contacto\(bloqueados == 1 ? "" : "s") no aparece\(bloqueados == 1 ? "" : "n") porque recibió mensaje en los últimos \(store.diasBloqueo.dias(categoria.claveBloqueo)) días.")
-                    .font(.caption)
-                    .foregroundStyle(Tema.advertencia)
-            }
-            if !masivos, plantilla?.tieneContenido != true {
-                Label("Configura primero la plantilla en Configuración → Plantillas.", systemImage: "exclamationmark.triangle")
-                    .font(.caption)
-                    .foregroundStyle(Tema.advertencia)
-            }
-            if total > 0 {
-                HStack {
-                    Text("Mostrando \(inicio + 1)–\(inicio + enPagina.count) de \(total)").font(.caption).foregroundStyle(Tema.apagado)
-                    Spacer()
-                    Picker("Por página", selection: $porPagina) {
-                        ForEach([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200], id: \.self) { Text("\($0)").tag($0) }
+        VStack(alignment: .leading, spacing: 10) {
+            Text(titulo.uppercased())
+                .font(.system(size: 10, weight: .bold))
+                .tracking(0.6)
+                .foregroundStyle(Tema.acento)
+                .lineLimit(2)
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(total) contacto\(total == 1 ? "" : "s")")
+                        .font(.system(size: 17, weight: .heavy))
+                        .foregroundStyle(Tema.texto)
+                    if total > 0 {
+                        Text("Mostrando \(inicio + 1)–\(inicio + enPagina.count)")
+                            .font(Tipo.detalle)
+                            .foregroundStyle(Tema.apagado)
                     }
-                    .labelsHidden()
+                }
+                Spacer(minLength: 6)
+                if total > 0 {
+                    Menu {
+                        Picker("Por página", selection: $porPagina) {
+                            ForEach([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200], id: \.self) { Text("\($0) por página").tag($0) }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("\(porPagina) por página")
+                            Image(systemName: "chevron.up.chevron.down").font(.system(size: 10, weight: .bold))
+                        }
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Tema.acento)
+                        .padding(.horizontal, 10)
+                        .frame(height: 30)
+                        .background(Tema.acento.opacity(0.1), in: Capsule())
+                    }
                     .onChange(of: porPagina) { _, _ in pagina = 0 }
                 }
             }
-            if !masivos, categoria == .sinrenovar, cuerpo == .linea {
-                Toggle("Opciones avanzadas (guardar líneas)", isOn: $lineaAvanzada).font(.subheadline)
+            if bloqueados > 0 {
+                Button { verBloqueados = true } label: {
+                    aviso("calendar.badge.clock", "\(bloqueados) contacto\(bloqueados == 1 ? "" : "s") en pausa: recibi\(bloqueados == 1 ? "ó" : "eron") mensaje en los últimos \(store.diasBloqueo.dias(categoria.claveBloqueo)) días.", accion: "Ver")
+                }
+                .buttonStyle(.plain)
+            }
+            if !masivos, plantilla?.tieneContenido != true {
+                aviso("exclamationmark.triangle.fill", "Configura primero la plantilla en Mensajes personalizados → Plantillas.")
+            }
+            if !masivos, categoria == .sinrenovar, cuerpo == .linea, store.esAdmin {
+                Rectangle().fill(Tema.borde.opacity(0.7)).frame(height: 1)
+                Toggle(isOn: $lineaAvanzada) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Guardar líneas").font(.system(size: 14, weight: .semibold)).foregroundStyle(Tema.texto)
+                        Text("Opciones avanzadas").font(Tipo.detalle).foregroundStyle(Tema.apagado)
+                    }
+                }
+                .tint(Tema.acento)
             }
         }
+        .tarjeta()
+        .filaTarjeta()
+    }
+
+    private func aviso(_ icono: String, _ texto: String, accion: String? = nil) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Image(systemName: icono).font(.system(size: 12, weight: .semibold))
+            Text(texto).font(Tipo.detalle).fixedSize(horizontal: false, vertical: true)
+            if let accion {
+                Spacer(minLength: 4)
+                Text(accion).font(.system(size: 12, weight: .bold))
+                Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold))
+            }
+        }
+        .foregroundStyle(Tema.advertencia)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Tema.advertencia.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     @ViewBuilder
@@ -360,17 +414,12 @@ struct ListaEnvioView: View {
                 etiquetaFila(c, tipo: tipo, plantilla: plantilla)
             }
             camposExtra(c, tipo: tipo, plantilla: plantilla)
+            Rectangle().fill(Tema.borde.opacity(0.7)).frame(height: 1)
             HStack(spacing: 8) {
-                Button {
-                    enviar(c, plantilla: plantilla)
-                } label: {
-                    Label("Enviar WhatsApp", systemImage: "message.fill").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.pastilla(Tema.Seccion.whatsapp, relleno: true))
                 Button {
                     confirmacion = Confirmacion(
                         titulo: "Marcar como enviado",
-                        mensaje: "¿Marcar a \(c.nombre) como enviado? Quedará bloqueado \(store.diasBloqueo.dias(categoria.claveBloqueo)) días.",
+                        mensaje: "¿Marcar a \(c.nombre) como enviado? Quedará en pausa \(store.diasBloqueo.dias(categoria.claveBloqueo)) días.",
                         boton: "Marcar"
                     ) {
                         if await store.marcarMensajeEnviado([c.id], categoria: categoria, cuerpo: cuerpoEnvio) {
@@ -379,9 +428,27 @@ struct ListaEnvioView: View {
                         }
                     }
                 } label: {
-                    Label("Enviado", systemImage: "checkmark").frame(maxWidth: 110)
+                    Label("Marcar enviado", systemImage: "checkmark.circle")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Tema.apagado)
+                        .padding(.horizontal, 12)
+                        .frame(height: 36)
+                        .background(Tema.superficie2.opacity(0.8), in: Capsule())
                 }
-                .buttonStyle(.pastilla(Tema.apagado))
+                .buttonStyle(.plain)
+                Spacer(minLength: 4)
+                Button {
+                    enviar(c, plantilla: plantilla)
+                } label: {
+                    Label("Abrir en WhatsApp", systemImage: "arrow.up.forward.app")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Tema.Seccion.whatsapp)
+                        .padding(.horizontal, 14)
+                        .frame(height: 36)
+                        .background(Tema.Seccion.whatsapp.opacity(0.13), in: Capsule())
+                        .overlay(Capsule().stroke(Tema.Seccion.whatsapp.opacity(0.35), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -395,9 +462,7 @@ struct ListaEnvioView: View {
                 Text(Dinero.texto(c.macropesos ?? 0)).font(.system(size: 14, weight: .heavy, design: .monospaced)).foregroundStyle(Tema.acento)
             }
         case .linea:
-            if let guardada = c["lineaCreditoGuardada"]?.text, let monto = Double(guardada) {
-                Etiqueta("Guardada", color: Tema.exito).help(Dinero.texto(monto))
-            }
+            EmptyView()
         case .financing, .creditos:
             Etiqueta(tipo == .financing ? "Financing" : "Créditos", color: tipo == .financing ? Tema.Seccion.azul : Tema.Seccion.morado)
         case .promociones:
@@ -406,9 +471,17 @@ struct ListaEnvioView: View {
     }
 
     /// An amount field with its label above and a "$" in front.
-    private func campoMonto(_ titulo: String, _ mapa: Binding<[String: String]>, _ id: String, sugerencia: String = "0") -> some View {
+    private func campoMonto(_ titulo: String, _ mapa: Binding<[String: String]>, _ id: String, sugerencia: String = "0", guardada: String? = nil) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(titulo.uppercased()).font(.system(size: 10, weight: .semibold)).tracking(0.5).foregroundStyle(Tema.apagado)
+            HStack(spacing: 4) {
+                Text(titulo.uppercased()).font(.system(size: 10, weight: .semibold)).tracking(0.5).foregroundStyle(Tema.apagado)
+                Spacer(minLength: 4)
+                if let guardada {
+                    Image(systemName: "checkmark.seal.fill").font(.system(size: 10))
+                    Text("Guardada \(guardada)").font(.system(size: 11, weight: .semibold))
+                }
+            }
+            .foregroundStyle(Tema.exito)
             HStack(spacing: 4) {
                 Text("$").font(.system(size: 15, weight: .bold)).foregroundStyle(Tema.apagado)
                 TextField(sugerencia, text: Binding(get: { mapa.wrappedValue[id] ?? "" }, set: { mapa.wrappedValue[id] = $0 }))
@@ -428,7 +501,7 @@ struct ListaEnvioView: View {
         if tipo == .linea {
             let guardada = c["lineaCreditoGuardada"]?.text
             HStack(alignment: .bottom, spacing: 8) {
-                campoMonto("Línea de crédito", $lineas, c.id)
+                campoMonto("Línea de crédito", $lineas, c.id, guardada: guardada.flatMap(Double.init).map(Dinero.texto))
                 if lineaAvanzada, store.esAdmin {
                     Button { guardarLinea(c) } label: {
                         Label(guardada == nil ? "Guardar" : "Actualizar", systemImage: guardada == nil ? "square.and.arrow.down" : "pencil")
@@ -436,11 +509,6 @@ struct ListaEnvioView: View {
                     .buttonStyle(.pastilla(Tema.acento))
                     .frame(height: 40)
                 }
-            }
-            if let guardada, let monto = Double(guardada) {
-                Label("Línea guardada: \(Dinero.texto(monto))", systemImage: "checkmark.circle.fill")
-                    .font(Tipo.detalle.weight(.semibold))
-                    .foregroundStyle(Tema.exito)
             }
         } else if tipo == .porfinalizar || ((tipo == .financing || tipo == .creditos) && !avanzadasPR(c, plantilla)) {
             campoMonto("Línea de crédito", $lineas, c.id)
@@ -514,7 +582,7 @@ struct ListaEnvioView: View {
     /// `enviarWhatsAppPersonalizado`.
     private func enviar(_ c: Cliente, plantilla: MensajePredeterminado?) {
         guard !c.tel.isEmpty else { return store.avisar("Sin teléfono", advertencia: true) }
-        guard let plantilla, plantilla.tieneContenido else { return store.avisar("Configura primero la plantilla en Configuración", advertencia: true) }
+        guard let plantilla, plantilla.tieneContenido else { return store.avisar("Configura primero la plantilla en Plantillas", advertencia: true) }
         let tipo = cuerpoPara(c)
         var extras = ExtrasMensaje()
         switch tipo {

@@ -181,11 +181,6 @@ struct MenuRecordatoriosView: View {
                 NavigationLink(value: RutaHerramienta.recordatorio(.creditoDisponible)) {
                     OpcionMenu(titulo: "Crédito disponible", detalle: "Clientes con crédito disponible para renovar", icono: "chart.bar.fill", color: Tema.Seccion.verde)
                 }
-                NavigationLink {
-                    PlantillasView(mensajes: false)
-                } label: {
-                    OpcionMenu(titulo: "Plantillas de recordatorios", detalle: "Textos que se envían por WhatsApp", icono: "text.bubble.fill", color: Tema.Seccion.cian)
-                }
             }
             .buttonStyle(.plain)
             .padding()
@@ -193,6 +188,11 @@ struct MenuRecordatoriosView: View {
         .background(Tema.fondo)
         .navigationTitle("Envío de recordatorio")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink { PlantillasView(mensajes: false) } label: { Text("Plantillas") }
+            }
+        }
     }
 }
 
@@ -249,7 +249,7 @@ struct ListaRecordatorioView: View {
                     }
                 }
                 if plantilla == nil {
-                    Label("Configura primero la plantilla en Configuración → Plantillas.", systemImage: "exclamationmark.triangle")
+                    Label("Configura primero la plantilla en Envío de recordatorio → Plantillas.", systemImage: "exclamationmark.triangle")
                         .font(.caption)
                         .foregroundStyle(Tema.advertencia)
                 }

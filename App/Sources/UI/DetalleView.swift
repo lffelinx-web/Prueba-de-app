@@ -10,6 +10,7 @@ struct DetalleView: View {
     @State private var formulario: Formulario?
     @State private var macropesos = ""
     @State private var verHistorial = false
+    @State private var verQR = false
     @FocusState private var editandoMacro: Bool
 
     var body: some View {
@@ -54,6 +55,11 @@ struct DetalleView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Editar") { formulario = editar }
                 }
+            }
+        }
+        .sheet(isPresented: $verQR) {
+            if let c = store.cliente(clienteId) {
+                HojaQR(nombre: c.nombre, folios: folios(c))
             }
         }
         .sheet(isPresented: $verHistorial) {
@@ -101,16 +107,46 @@ struct DetalleView: View {
 
     // MARK: - Header
 
+    /// The client's SL numbers: the ones written in its own record plus the other active
+    /// credit's when it has a double financing.
+    private func folios(_ c: Cliente) -> [String] {
+        var lista: [String] = []
+        let separadores = CharacterSet(charactersIn: "/,;|").union(.whitespacesAndNewlines)
+        for sl in [c.sl, store.cliente(c.dobleFinId)?.sl] {
+            for parte in (sl ?? "").components(separatedBy: separadores) where !parte.isEmpty && !lista.contains(parte) {
+                lista.append(parte)
+            }
+        }
+        return lista
+    }
+
     private func cabecera(_ c: Cliente) -> some View {
         let tono = color(de: c)
         let iniciales = String(c.nombre.split(separator: " ").compactMap(\.first).prefix(2)).uppercased()
         return VStack(spacing: 10) {
-            Text(iniciales.isEmpty ? "?" : iniciales)
-                .font(.system(size: 24, weight: .heavy))
-                .foregroundStyle(.white)
-                .frame(width: 68, height: 68)
-                .background(Circle().fill(tono).overlay(Circle().fill(LinearGradient(colors: [.white.opacity(0.38), .clear], startPoint: .topLeading, endPoint: .bottomTrailing))))
-                .shadow(color: tono.opacity(0.45), radius: 10, x: 0, y: 6)
+            let conQR = !folios(c).isEmpty
+            Button { verQR = true } label: {
+                Text(iniciales.isEmpty ? "?" : iniciales)
+                    .font(.system(size: 24, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .frame(width: 68, height: 68)
+                    .background(Circle().fill(tono).overlay(Circle().fill(LinearGradient(colors: [.white.opacity(0.38), .clear], startPoint: .topLeading, endPoint: .bottomTrailing))))
+                    .shadow(color: tono.opacity(0.45), radius: 10, x: 0, y: 6)
+                    .overlay(alignment: .bottomTrailing) {
+                        if conQR {
+                            Image(systemName: "qrcode")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(tono)
+                                .frame(width: 24, height: 24)
+                                .background(Tema.superficie, in: Circle())
+                                .overlay(Circle().stroke(Tema.borde, lineWidth: 1))
+                                .offset(x: 2, y: 2)
+                        }
+                    }
+            }
+            .buttonStyle(.plain)
+            .disabled(!conQR)
+            .accessibilityLabel("Ver código QR del SL")
             Text(c.nombre)
                 .font(.system(size: 19, weight: .heavy))
                 .foregroundStyle(c.inhabilitado ? Tema.apagado : Tema.texto)
@@ -708,6 +744,51 @@ struct PagosPasadosView: View {
             }
             .confirmacion($confirmacion)
         }
+        .capaDeEstado()
+    }
+}
+
+/// Full-size QR codes of a client's SL numbers, one per credit, ready to scan.
+struct HojaQR: View {
+    @Environment(\.dismiss) private var dismiss
+    let nombre: String
+    let folios: [String]
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
+                    Text(nombre)
+                        .font(.system(size: 17, weight: .heavy))
+                        .foregroundStyle(Tema.texto)
+                        .multilineTextAlignment(.center)
+                    ForEach(folios.indices, id: \.self) { i in
+                        VStack(spacing: 10) {
+                            if folios.count > 1 {
+                                Text("Crédito \(i + 1)")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .tracking(0.6)
+                                    .foregroundStyle(Tema.apagado)
+                            }
+                            CodigoQR(texto: folios[i], lado: folios.count > 1 ? 190 : 240)
+                            ChipCopiable(texto: folios[i], etiqueta: "SL")
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity)
+                        .background(Tema.superficie, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Tema.borde, lineWidth: 1))
+                    }
+                }
+                .padding(16)
+            }
+            .background(Tema.fondo)
+            .navigationTitle(folios.count > 1 ? "Códigos QR" : "Código QR")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Listo") { dismiss() } }
+            }
+        }
+        .presentationDetents(folios.count > 1 ? [.large] : [.medium, .large])
         .capaDeEstado()
     }
 }
