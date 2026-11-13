@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import CentroDeDatos
 
 final class PagosTests: XCTestCase {
@@ -261,5 +262,32 @@ final class ExcelTests: XCTestCase {
         XCTAssertTrue(texto.contains("<sheet name=\"Sin renovar\""))
         XCTAssertTrue(texto.contains("Ana &amp; Cía"))
         XCTAssertTrue(texto.contains("  Ref. 1: Beto"))
+    }
+}
+
+final class PDFTests: XCTestCase {
+    private func foto(_ ancho: CGFloat, _ alto: CGFloat) -> UIImage {
+        let formato = UIGraphicsImageRendererFormat()
+        formato.scale = 1
+        return UIGraphicsImageRenderer(size: CGSize(width: ancho, height: alto), format: formato).image { ctx in
+            UIColor.systemBlue.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: ancho, height: alto))
+        }
+    }
+
+    func testPaginaTomaElTamanoDeLaFoto() throws {
+        let vertical = try XCTUnwrap(PDF.preparar(foto(600, 800)))
+        let grande = try XCTUnwrap(PDF.preparar(foto(4000, 3000)))
+        XCTAssertEqual(UIImage(data: grande)?.size, CGSize(width: 2000, height: 1500))
+        let datos = PDF.crear([vertical, grande])
+        let documento = try XCTUnwrap(CGPDFDocument(CGDataProvider(data: datos as CFData)!))
+        XCTAssertEqual(documento.numberOfPages, 2)
+        XCTAssertEqual(documento.page(at: 1)?.getBoxRect(.mediaBox).size, CGSize(width: 300, height: 400))
+        XCTAssertEqual(documento.page(at: 2)?.getBoxRect(.mediaBox).size, CGSize(width: 1000, height: 750))
+    }
+
+    func testNombreArchivo() {
+        XCTAssertEqual(PDF.nombreArchivo("INE / Juan"), "INE  Juan.pdf")
+        XCTAssertEqual(PDF.nombreArchivo("  "), "Fotos.pdf")
     }
 }

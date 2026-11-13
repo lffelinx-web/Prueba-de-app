@@ -11,6 +11,7 @@ enum RutaHerramienta: Hashable {
     case envio(masivos: Bool, categoria: CategoriaMensaje, cuerpo: CuerpoMensaje?)
     case ajustes
     case plantillas
+    case fotosPDF
 }
 
 /// The web's "Herramientas" tab: payments by day, WhatsApp reminders and messages.
@@ -27,6 +28,9 @@ struct HerramientasView: View {
                 grupo("WhatsApp") {
                     fila(.mensajes(masivos: true), "Mensajes masivos", "Copiar lista o exportar CSV", icono: "megaphone.fill", color: Tema.Seccion.ambar)
                     fila(.mensajes(masivos: false), "Mensajes personalizados", "Un WhatsApp por contacto", icono: "envelope.fill", color: Tema.Seccion.morado, separador: true)
+                }
+                grupo("Archivos") {
+                    fila(.fotosPDF, "Fotos a PDF", "Junta fotos en un PDF ligero", icono: "doc.richtext.fill", color: Tema.Seccion.cian)
                 }
             }
             .padding(.horizontal, 14)
@@ -45,6 +49,7 @@ struct HerramientasView: View {
             case .envio(let masivos, let categoria, let cuerpo): ListaEnvioView(masivos: masivos, categoria: categoria, cuerpo: cuerpo)
             case .ajustes: AjustesView()
             case .plantillas: PlantillasView()
+            case .fotosPDF: FotosPDFView()
             }
         }
     }
