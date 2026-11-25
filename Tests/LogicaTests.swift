@@ -238,6 +238,28 @@ final class EnviosTests: XCTestCase {
         XCTAssertTrue(Envios.pagos(enDia: 1, de: [c]).isEmpty)
     }
 
+    func testDosCreditosActivosSeDetectan() {
+        let lista = [
+            Cliente(raw: ["id": "a", "nombre": "Ana", "tel": "5511111111", "categoria": "activos", "curp": "AAAA000000"]),
+            Cliente(raw: ["id": "b", "nombre": "Ana", "tel": "5522222222", "categoria": "activos", "curp": "aaaa000000"]),
+            Cliente(raw: ["id": "c", "nombre": "Beto", "tel": "5533333333", "categoria": "activos", "dobleFinId": "d"]),
+            Cliente(raw: ["id": "d", "nombre": "Beto", "tel": "", "categoria": "activos"]),
+            Cliente(raw: ["id": "e", "nombre": "Caro", "tel": "5544444444", "categoria": "activos"]),
+            Cliente(raw: ["id": "f", "nombre": "Caro", "tel": "5544444444", "categoria": "sinrenovar"]),
+        ]
+        XCTAssertEqual(Envios.conVariosCreditosActivos(lista), ["a", "b", "c", "d"])
+    }
+
+    func testPlazosLargosSinCreditoDisponible() {
+        XCTAssertEqual(Envios.plazosSinCreditoDisponible, [78, 104, 125])
+        XCTAssertTrue(Catalogos.plazos.contains("9"))
+    }
+
+    func testVerificadosUsanDiasDeProspectos() {
+        XCTAssertEqual(CategoriaMensaje.prospectosVerificados.claveBloqueo, "prospectos")
+        XCTAssertEqual(TipoRecordatorio.conPlantilla, [.macropesosDisponibles, .macropesosInvitacion, .creditoDisponible])
+    }
+
     func testCsvConPrimerNombre() {
         let c = Cliente(raw: ["id": "1", "nombre": "MARIA DE JESUS LOPEZ", "tel": "5512345678"])
         XCTAssertEqual(Envios.csv([c]), "\u{FEFF}\"Name\",\"Phone\"\n\"Maria de Jesus\",\"5512345678\"")

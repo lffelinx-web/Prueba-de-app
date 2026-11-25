@@ -332,7 +332,7 @@ struct Filtros: Equatable {
 }
 
 enum Catalogos {
-    static let plazos = ["6", "13", "26", "36", "39", "52", "78", "104", "125"]
+    static let plazos = ["6", "9", "13", "26", "36", "39", "52", "78", "104", "125"]
     static let tiposCredito = ["Compra", "Préstamo"]
     static let tiposPR = ["Financing", "Créditos"]
 }

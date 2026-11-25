@@ -61,6 +61,29 @@ enum Envios {
         return Double(transcurridas) > Double(total) / 2 && restantes > 6
     }
 
+    /// Terms (weeks) left out of "Crédito disponible".
+    static let plazosSinCreditoDisponible: Set<Int> = [78, 104, 125]
+
+    /// Ids of active credits whose holder has another active credit: linked by `dobleFinId`
+    /// in either direction, or the same person (CURP, else phone) twice.
+    static func conVariosCreditosActivos(_ clientes: [Cliente]) -> Set<String> {
+        let activos = clientes.filter { $0.categoria == .activos && !$0.inhabilitado }
+        let idsActivos = Set(activos.map(\.id))
+        var resultado = Set<String>()
+        for c in activos {
+            if let otro = c.dobleFinId, idsActivos.contains(otro) { resultado.insert(c.id); resultado.insert(otro) }
+        }
+        var porPersona: [String: [String]] = [:]
+        for c in activos {
+            let curp = (c.curp ?? "").trimmingCharacters(in: .whitespaces).uppercased()
+            let tel = Texto.soloDigitos(c.tel)
+            let clave = !curp.isEmpty ? "c:" + curp : (tel.count >= 10 ? "t:" + tel : "")
+            if !clave.isEmpty { porPersona[clave, default: []].append(c.id) }
+        }
+        for ids in porPersona.values where ids.count > 1 { resultado.formUnion(ids) }
+        return resultado
+    }
+
     static func candidatosRecordatorio(_ tipo: TipoRecordatorio, en clientes: [Cliente], macroMinimo: Double = 0) -> [Cliente] {
         let ahora = ahora()
         let lista: [Cliente]
@@ -73,10 +96,13 @@ enum Envios {
         case .macropesosInvitacion:
             lista = clientes.filter(activoAlCorrienteConWhatsApp)
         case .creditoDisponible:
+            let conDosCreditos = conVariosCreditosActivos(clientes)
             lista = clientes.filter { c in
                 guard activoAlCorrienteConWhatsApp(c), normalizarNombre(c.tipo) != "prestamo" else { return false }
+                // Long terms never get this offer.
+                if let plazo = c.semanas.flatMap({ Int($0.trimmingCharacters(in: .whitespaces)) }), plazosSinCreditoDisponible.contains(plazo) { return false }
                 // Already has a second active credit.
-                if let otro = c.dobleFinId, clientes.contains(where: { $0.id == otro && $0.categoria == .activos }) { return false }
+                if conDosCreditos.contains(c.id) { return false }
                 if let hasta = c["suspendidoCreditoDisp"]?.number, ahora < hasta { return false }
                 return mitadPagadaConSemanas(c)
             }

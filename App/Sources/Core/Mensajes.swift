@@ -12,6 +12,9 @@ enum TipoRecordatorio: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Types with an editable template; payment reminders now just open the chat.
+    static let conPlantilla: [TipoRecordatorio] = [.macropesosDisponibles, .macropesosInvitacion, .creditoDisponible]
+
     var titulo: String {
         switch self {
         case .pagosHoy: return "Pagos de hoy"
@@ -127,7 +130,8 @@ enum CategoriaMensaje: String, CaseIterable, Identifiable {
     static let personalizados: [CategoriaMensaje] = [.sinrenovar, .porfinalizar, .prAprobadas, .prospectosVerificados]
 
     /// Key into the per-category blocking days configured by the administrator.
-    var claveBloqueo: String { rawValue }
+    /// Verified prospects share the prospects' days.
+    var claveBloqueo: String { self == .prospectosVerificados ? CategoriaMensaje.prospectos.rawValue : rawValue }
 }
 
 struct MensajePredeterminado: Equatable {

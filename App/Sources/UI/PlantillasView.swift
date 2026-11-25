@@ -10,7 +10,7 @@ struct PlantillasView: View {
         List {
             if recordatorios {
             Section("Recordatorios") {
-                ForEach(TipoRecordatorio.allCases) { tipo in
+                ForEach(TipoRecordatorio.conPlantilla) { tipo in
                     NavigationLink {
                         EditorRecordatorioView(tipo: tipo)
                     } label: {

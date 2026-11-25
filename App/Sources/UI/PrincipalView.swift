@@ -452,27 +452,18 @@ struct ChipCopiable: View {
     }
 }
 
-/// WhatsApp for a due payment: with the "Pagos de hoy" / "Pagos atrasados" reminder when the user
-/// has that template, otherwise just the chat, like the web.
+/// Opens the client's WhatsApp chat for a due payment, with no prefilled text.
 struct BotonRecordatorioPago: View {
-    @EnvironmentObject private var store: Store
     let cliente: Cliente
     let pago: Pago
     let atrasado: Bool
 
     var body: some View {
-        let tipo = atrasado ? TipoRecordatorio.pagosAtrasados : .pagosHoy
-        if cliente.tieneTelefonoWA, let plantilla = store.plantillaRecordatorio(tipo),
-           let url = WhatsApp.url(cliente.tel, mensaje: Mensajes.recordatorio(plantilla, tipo: tipo, cliente: cliente, extras: ExtrasMensaje(numPago: Mensajes.ordinal(pago.num)))) {
-            Link(destination: url) {
-                Label("Recordar", systemImage: "message.fill").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.pastilla(Tema.Seccion.whatsapp, relleno: true))
-        } else if cliente.tieneTelefonoWA, let url = WhatsApp.url(cliente.tel) {
+        if cliente.tieneTelefonoWA, let url = WhatsApp.url(cliente.tel) {
             Link(destination: url) {
                 Label("WhatsApp", systemImage: "message.fill").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.pastilla(Tema.Seccion.whatsapp, relleno: true))
+            .buttonStyle(.pastilla(Tema.Seccion.whatsapp))
         }
     }
 }
