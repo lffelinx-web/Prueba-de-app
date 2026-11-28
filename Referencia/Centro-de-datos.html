@@ -684,7 +684,7 @@ body.light #screen-lock{background:radial-gradient(ellipse at 30% 60%,#d0dcea,#f
       <div class="f-group"><label>Plazo (semanas) *</label>
         <select id="ma-semanas">
           <option value="">Seleccionar</option>
-          <option value="6">6</option><option value="13">13</option><option value="26">26</option>
+          <option value="6">6</option><option value="9">9</option><option value="13">13</option><option value="26">26</option>
           <option value="36">36</option><option value="39">39</option><option value="52">52</option>
           <option value="78">78</option><option value="104">104</option><option value="125">125</option>
         </select>
@@ -810,9 +810,6 @@ body.light #screen-lock{background:radial-gradient(ellipse at 30% 60%,#d0dcea,#f
     <div class="f-group"><label>Fecha de solicitud *</label><input type="date" id="mpr-fecha-sol"></div>
     <div class="f-group"><label>Asesor *</label>
       <select id="mpr-asesor"><option value="">Seleccionar</option></select>
-    </div>
-    <div class="f-group"><label>Tipo *</label>
-      <select id="mpr-tipocred"><option value="">Seleccionar</option><option value="Financing">Financing</option><option value="Créditos">Créditos</option></select>
     </div>
     <div class="f-group"><label>Detalles de la PR</label>
       <textarea id="mpr-detalles" placeholder="Escribe los detalles de la solicitud..." style="min-height:80px"></textarea>
@@ -1436,22 +1433,12 @@ body.light #screen-lock{background:radial-gradient(ellipse at 30% 60%,#d0dcea,#f
     </div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Configura las marcas y modelos disponibles:</p>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn-detail" style="justify-content:flex-start;padding:14px;text-align:left" onclick="closeModal('modal-catalogos');setTimeout(()=>openCatalogoCelulares(),50)">
-        <div style="display:flex;align-items:center;gap:12px;width:100%">
-          <div style="font-size:22px">📱</div>
-          <div style="flex:1">
-            <div style="font-weight:600;font-size:14px;color:var(--text)">Celulares</div>
-            <div style="font-size:12px;color:var(--muted)">Marcas y modelos de celulares</div>
-          </div>
-          <div style="color:var(--muted)">›</div>
-        </div>
-      </button>
       <button class="btn-detail" style="justify-content:flex-start;padding:14px;text-align:left" onclick="closeModal('modal-catalogos');setTimeout(()=>openCatalogoProductos(),50)">
         <div style="display:flex;align-items:center;gap:12px;width:100%">
           <div style="font-size:22px">📦</div>
           <div style="flex:1">
             <div style="font-weight:600;font-size:14px;color:var(--text)">Productos</div>
-            <div style="font-size:12px;color:var(--muted)">iPhone, Pantallas, Bicis, Motos, Accesorios</div>
+            <div style="font-size:12px;color:var(--muted)">iPhone, Celulares, Pantallas, Bicis, Motos, Accesorios</div>
           </div>
           <div style="color:var(--muted)">›</div>
         </div>
@@ -1465,7 +1452,7 @@ body.light #screen-lock{background:radial-gradient(ellipse at 30% 60%,#d0dcea,#f
   <div class="modal-box">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <div class="modal-title">📱 Celulares — Marcas</div>
+      <div class="modal-title" id="cat-marcas-title">📱 Celulares — Marcas</div>
       <button class="btn-close" onclick="closeModal('modal-cat-celulares')">✕</button>
     </div>
     <div id="cat-celulares-list"></div>
@@ -1473,8 +1460,9 @@ body.light #screen-lock{background:radial-gradient(ellipse at 30% 60%,#d0dcea,#f
       <input type="text" id="cat-celulares-nueva-marca" placeholder="Nueva marca (ej. Samsung)" style="flex:1;font-size:13px;padding:8px 10px" autocorrect="off">
       <button class="btn-gold" onclick="agregarMarcaCelular()">Agregar</button>
     </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px">La marca se guarda al agregarle su primer modelo.</div>
     <div class="modal-footer">
-      <button class="btn-outline-sm" onclick="closeModal('modal-cat-celulares');setTimeout(()=>openCatalogos(),50)">← Volver</button>
+      <button class="btn-outline-sm" onclick="closeModal('modal-cat-celulares');setTimeout(()=>openCatalogoProductos(),50)">← Volver</button>
       <button class="btn-gold" style="flex:2" onclick="closeModal('modal-cat-celulares')">Cerrar</button>
     </div>
   </div>
@@ -1490,11 +1478,11 @@ body.light #screen-lock{background:radial-gradient(ellipse at 30% 60%,#d0dcea,#f
     </div>
     <div id="cat-cel-modelos-list"></div>
     <div style="display:flex;gap:6px;margin-top:10px">
-      <input type="text" id="cat-cel-modelos-nuevo" placeholder="Nuevo modelo (ej. iPhone 15)" style="flex:1;font-size:13px;padding:8px 10px" autocorrect="off">
+      <input type="text" id="cat-cel-modelos-nuevo" placeholder="Nuevo modelo (ej. Galaxy A15)" style="flex:1;font-size:13px;padding:8px 10px" autocorrect="off">
       <button class="btn-gold" onclick="agregarModeloCelular()">Agregar</button>
     </div>
     <div class="modal-footer">
-      <button class="btn-outline-sm" onclick="closeModal('modal-cat-celular-modelos');setTimeout(()=>openCatalogoCelulares(),50)">← Volver</button>
+      <button class="btn-outline-sm" onclick="closeModal('modal-cat-celular-modelos');setTimeout(()=>openCatalogoMarcas(_catMarcaCategoria),50)">← Volver</button>
       <button class="btn-gold" style="flex:2" onclick="closeModal('modal-cat-celular-modelos')">Cerrar</button>
     </div>
   </div>
@@ -1554,16 +1542,6 @@ body.light #screen-lock{background:radial-gradient(ellipse at 30% 60%,#d0dcea,#f
     </div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Selecciona la categoría a configurar:</p>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn-detail" style="justify-content:flex-start;padding:14px;text-align:left" onclick="openRecPlantillaSubGrupo('pagos')">
-        <div style="display:flex;align-items:center;gap:12px;width:100%">
-          <div style="font-size:22px">💵</div>
-          <div style="flex:1">
-            <div style="font-weight:600;font-size:14px;color:var(--text)">Pagos</div>
-            <div style="font-size:12px;color:var(--muted)">Pagos de hoy y pagos atrasados</div>
-          </div>
-          <div style="color:var(--muted)">›</div>
-        </div>
-      </button>
       <button class="btn-detail" style="justify-content:flex-start;padding:14px;text-align:left" onclick="openRecPlantillaSubGrupo('macropesos')">
         <div style="display:flex;align-items:center;gap:12px;width:100%">
           <div style="font-size:22px">💰</div>
@@ -1883,53 +1861,27 @@ body.light #screen-lock{background:radial-gradient(ellipse at 30% 60%,#d0dcea,#f
           </div>
         </div>
 
-        <div id="extra-financing-panel" class="extra-panel" style="display:none">
+        <div id="extra-pr-panel" class="extra-panel" style="display:none">
           <div class="f-group">
-            <label>Cuerpo del mensaje (Financing)</label>
+            <label>Cuerpo del mensaje (PR aprobada)</label>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-              <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-financing','[linea de crédito]')" style="padding:4px 10px;font-size:11px">+ [linea de crédito]</button>
+              <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-pr','[linea de crédito]')" style="padding:4px 10px;font-size:11px">+ [linea de crédito]</button>
             </div>
-            <textarea id="msgpred-cuerpo-financing" rows="4" placeholder="Ej. Tu Financing por [linea de crédito]" oninput="actualizarVistaPreviaMsgPred()" style="resize:vertical;min-height:80px"></textarea>
+            <textarea id="msgpred-cuerpo-pr" rows="4" placeholder="Ej. Tu solicitud fue aprobada por [linea de crédito]" oninput="actualizarVistaPreviaMsgPred()" style="resize:vertical;min-height:80px"></textarea>
 
             <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:6px 0;border-top:1px dashed var(--border)">
               <span style="font-size:12px;color:var(--muted);flex:1">⚙️ Opciones avanzadas</span>
-              <button class="toggle" id="adv-financing-toggle" onclick="toggleAvanzadasFinancing()" type="button"></button>
+              <button class="toggle" id="adv-pr-toggle" onclick="toggleAvanzadasPR()" type="button"></button>
             </div>
-            <div id="adv-financing-panel" style="display:none;margin-top:8px">
-              <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:4px">Cuerpo del mensaje (Financing — avanzado)</label>
-              <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-style:italic">Este mensaje se enviará cuando estén activas las opciones avanzadas.</div>
+            <div id="adv-pr-panel" style="display:none;margin-top:8px">
+              <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:4px">Cuerpo del mensaje (PR aprobada — avanzado)</label>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-style:italic">Se envía cuando están activas las opciones avanzadas. [producto] se escribe completo, por ejemplo "Celular Samsung Galaxy A15".</div>
               <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-                <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-financing-adv','[linea de crédito]')" style="padding:4px 10px;font-size:11px">+ [linea de crédito]</button>
-                <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-financing-adv','[enganche]')" style="padding:4px 10px;font-size:11px">+ [enganche]</button>
-                <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-financing-adv','[equipo]')" style="padding:4px 10px;font-size:11px">+ [equipo]</button>
+                <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-pr-adv','[linea de crédito]')" style="padding:4px 10px;font-size:11px">+ [linea de crédito]</button>
+                <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-pr-adv','[enganche]')" style="padding:4px 10px;font-size:11px">+ [enganche]</button>
+                <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-pr-adv','[producto]')" style="padding:4px 10px;font-size:11px">+ [producto]</button>
               </div>
-              <textarea id="msgpred-cuerpo-financing-adv" rows="4" placeholder="Ej. Tu Financing por [linea de crédito] con enganche de [enganche] para tu [equipo]" oninput="actualizarVistaPreviaMsgPred()" style="resize:vertical;min-height:80px"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <div id="extra-creditos-panel" class="extra-panel" style="display:none">
-          <div class="f-group">
-            <label>Cuerpo del mensaje (Créditos)</label>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-              <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-creditos','[linea de crédito]')" style="padding:4px 10px;font-size:11px">+ [linea de crédito]</button>
-            </div>
-            <textarea id="msgpred-cuerpo-creditos" rows="4" placeholder="Ej. Tu Crédito por [linea de crédito]" oninput="actualizarVistaPreviaMsgPred()" style="resize:vertical;min-height:80px"></textarea>
-
-            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:6px 0;border-top:1px dashed var(--border)">
-              <span style="font-size:12px;color:var(--muted);flex:1">⚙️ Opciones avanzadas</span>
-              <button class="toggle" id="adv-creditos-toggle" onclick="toggleAvanzadasCreditos()" type="button"></button>
-            </div>
-            <div id="adv-creditos-panel" style="display:none;margin-top:8px">
-              <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:4px">Cuerpo del mensaje (Créditos — avanzado)</label>
-              <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-style:italic">Este mensaje se enviará cuando estén activas las opciones avanzadas.</div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-                <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-creditos-adv','[linea de crédito]')" style="padding:4px 10px;font-size:11px">+ [linea de crédito]</button>
-                <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-creditos-adv','[enganche]')" style="padding:4px 10px;font-size:11px">+ [enganche]</button>
-                <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-creditos-adv','[tipo de producto]')" style="padding:4px 10px;font-size:11px">+ [tipo de producto]</button>
-                <button class="btn-outline-sm" type="button" onclick="insertarPlaceholder('msgpred-cuerpo-creditos-adv','[modelo]')" style="padding:4px 10px;font-size:11px">+ [modelo]</button>
-              </div>
-              <textarea id="msgpred-cuerpo-creditos-adv" rows="4" placeholder="Ej. Tu Crédito por [linea de crédito] con enganche de [enganche] para la [tipo de producto] [modelo]" oninput="actualizarVistaPreviaMsgPred()" style="resize:vertical;min-height:80px"></textarea>
+              <textarea id="msgpred-cuerpo-pr-adv" rows="4" placeholder="Ej. Tu crédito por [linea de crédito] con enganche de [enganche] para tu [producto]" oninput="actualizarVistaPreviaMsgPred()" style="resize:vertical;min-height:80px"></textarea>
             </div>
           </div>
         </div>
@@ -2389,10 +2341,17 @@ function _iniciarEscuchaClientes(){
   });
   db.ref('ca_catalogo_productos').on('value',(snap)=>{
     const data = snap.val();
-    catalogoProductos = data || {iPhone:[], Pantallas:[], Bicis:[], Motos:[], Accesorios:[]};
-    // Asegurar las 5 categorías existan
-    ['iPhone','Pantallas','Bicis','Motos','Accesorios'].forEach(k=>{
-      if(!catalogoProductos[k]) catalogoProductos[k]=[];
+    catalogoProductos = data || {};
+    // Celulares y Pantallas van por marca ({marca:[modelos]}); el resto son listas
+    ['iPhone','Celulares','Pantallas','Bicis','Motos','Accesorios'].forEach(k=>{
+      const conMarca = k==='Celulares' || k==='Pantallas';
+      const v = catalogoProductos[k];
+      if(conMarca){
+        // Una lista anterior (sin marcas) se ignora: el catálogo se captura de nuevo
+        if(!v || Array.isArray(v) || typeof v!=='object') catalogoProductos[k] = {};
+      } else if(!Array.isArray(v)){
+        catalogoProductos[k] = v && typeof v==='object' ? Object.values(v) : [];
+      }
     });
   });
 
@@ -2500,37 +2459,15 @@ function checkVencidos(){
   // SEGUNDO PASO: detectar nuevos vencimientos
   // - Si está atraso: NO se mueve. Permanece en activos (en amarillo) hasta que pague.
   // - Si está al-corriente: NO se mueve automáticamente. Genera notificación que pide confirmación.
-  // - Si tiene doble financiamiento con otro crédito activo: archivar y eliminar (lógica anterior)
+  // - Si tiene doble financiamiento con otro crédito activo: también espera confirmación (al confirmar se archiva en el otro).
   const idsAEliminar=new Set();
   clientes.forEach(c=>{
     if(c.categoria!=='activos'||!c.fechaCompra||!c.semanas)return;
     const fin=new Date(c.fechaCompra+'T12:00:00');fin.setDate(fin.getDate()+parseInt(c.semanas)*7);
     if(new Date()<fin)return;
 
-    // Vencido. Verificar si tiene doble financiamiento con otro crédito activo
-    if(c.dobleFinId){
-      const otro=clientes.find(x=>x.id===c.dobleFinId&&x.categoria==='activos');
-      if(otro){
-        // El otro crédito sigue vigente: archivar este crédito en el historial del otro
-        const entradaHist={
-          sl:c.sl,
-          fechaCompra:c.fechaCompra,
-          semanas:c.semanas,
-          asesor:c.asesor,
-          tipo:c.tipo,
-          fechaFin:fin.toISOString().slice(0,10),
-          pagosConfirmados:c.pagosConfirmados||[],
-          estatus:'liquidado',
-          refs:c.refs||[]
-        };
-        if(!otro.historial)otro.historial=[];
-        otro.historial.push(entradaHist);
-        delete otro.dobleFinId;
-        idsAEliminar.add(c.id);
-        ch=true;
-        return;
-      }
-    }
+    // Vencido. Con doble financiamiento tampoco se archiva solo: espera confirmación manual.
+    const _otroActivo = c.dobleFinId ? clientes.find(x=>x.id===c.dobleFinId&&x.categoria==='activos') : null;
 
     // Si está atraso: NO mover. Se queda en activos (en amarillo).
     if((c.estatus||'al-corriente')==='atraso') return;
@@ -2541,7 +2478,9 @@ function checkVencidos(){
       nombre: c.nombre,
       sl: c.sl||'',
       fechaFin: fin.toISOString().slice(0,10),
-      mensaje: `El crédito de ${c.nombre} (${c.sl||'sin SL'}) ya finalizó. ¿Confirmas que pasa a Sin renovar?`
+      mensaje: _otroActivo
+        ? `El crédito ${c.sl||'sin SL'} de ${c.nombre} ya finalizó (tiene doble financiamiento). ¿Confirmas que pasa al historial de su otro crédito?`
+        : `El crédito de ${c.nombre} (${c.sl||'sin SL'}) ya finalizó. ¿Confirmas que pasa a Sin renovar?`
     });
   });
 
@@ -3850,14 +3789,10 @@ function buildFilterPanel(cat){
       <div class="filter-field"><label>Asesor</label>
         <select id="f-asesor"><option value="">Todos</option></select>
       </div>
-      <div class="filter-field"><label>Tipo</label>
-        <select id="f-tipocred"><option value="">Todos</option><option>Financing</option><option>Créditos</option></select>
-      </div>
       <div class="filter-field full"><label>Fecha solicitud desde</label><input type="date" id="f-fecha-desde"></div>
       <div class="filter-field full"><label>Fecha solicitud hasta</label><input type="date" id="f-fecha-hasta"></div>`;
     _poblarSelectoresAsesor();
     if(activeFilters.asesor)document.getElementById('f-asesor').value=activeFilters.asesor;
-    if(activeFilters.tipocred)document.getElementById('f-tipocred').value=activeFilters.tipocred;
     if(activeFilters['fecha-desde'])document.getElementById('f-fecha-desde').value=activeFilters['fecha-desde'];
     if(activeFilters['fecha-hasta'])document.getElementById('f-fecha-hasta').value=activeFilters['fecha-hasta'];
     return;
@@ -3871,7 +3806,7 @@ function buildFilterPanel(cat){
       <select id="f-tipo"><option value="">Todos</option><option>Compra</option><option>Préstamo</option></select>
     </div>
     <div class="filter-field"><label>Plazo (semanas)</label>
-      <select id="f-plazo"><option value="">Todos</option><option>6</option><option>13</option><option>26</option><option>36</option><option>39</option><option>52</option><option>78</option><option>104</option><option>125</option></select>
+      <select id="f-plazo"><option value="">Todos</option><option>6</option><option>9</option><option>13</option><option>26</option><option>36</option><option>39</option><option>52</option><option>78</option><option>104</option><option>125</option></select>
     </div>
     <div class="filter-field"><label>Estatus</label>
       <select id="f-estatus"><option value="">Todos</option><option value="al-corriente">Al corriente</option><option value="atraso">En atraso</option></select>
@@ -3896,7 +3831,7 @@ function applyFilters(){
   activeFilters={};
   let flds=[];
   if(currentDB==='prospectos')flds=['asesor','pr-tipo','fecha-desde','fecha-hasta','verificado','whatsapp'];
-  else if(currentDB==='pr-aprobadas')flds=['asesor','tipocred','fecha-desde','fecha-hasta'];
+  else if(currentDB==='pr-aprobadas')flds=['asesor','fecha-desde','fecha-hasta'];
   else flds=['asesor','tipo','plazo','estatus','compra-desde','compra-hasta','vence-desde','vence-hasta','macro-min','macro-max'];
   flds.forEach(k=>{const el=document.getElementById('f-'+k);if(el&&el.value)activeFilters[k]=el.value});
   const hasFilters=Object.keys(activeFilters).length>0;
@@ -3925,7 +3860,6 @@ function applyFilterToList(list){
     }
     if(currentDB==='pr-aprobadas'){
       if(activeFilters.asesor&&(c.asesor||'')!==activeFilters.asesor)return false;
-      if(activeFilters.tipocred&&(c.tipocred||'')!==activeFilters.tipocred)return false;
       if(activeFilters['fecha-desde']&&(c.fechaSolicitud||'')<activeFilters['fecha-desde'])return false;
       if(activeFilters['fecha-hasta']&&(c.fechaSolicitud||'')>activeFilters['fecha-hasta'])return false;
       return true;
@@ -4028,7 +3962,7 @@ function renderDBTable(){
         <div class="client-card-row"><div class="cc-info">📞 <span>${c.tel||'—'}</span></div><div class="cc-sl">${c.sl||'—'}</div></div>
         <div class="client-card-row"><div class="cc-info">👤 <span>${c.asesor||'—'}</span></div><div class="cc-info">📅 <span>${fmtDate(c.fechaCompra)}</span></div></div>
         <div class="client-card-row"><div class="cc-info">⏱ <span>${c.semanas||'—'} sem.</span></div><div class="cc-info">📅 Vence: <span>${ff?fmtDate(ff):'—'}</span></div></div>
-        ${prAct?`<div class="client-card-row" style="background:rgba(123,224,163,0.06);padding:6px 8px;border-radius:6px;margin-top:4px"><div class="cc-info" style="font-size:11px;font-family:monospace">📋 ${esc(prAct.numPR||'—')} · ${prAct.tipocred||'—'}</div><div class="cc-info" style="font-size:11px">${prAct.fechaSolicitud?fmtDate(prAct.fechaSolicitud):''}</div></div>`:''}
+        ${prAct?`<div class="client-card-row" style="background:rgba(123,224,163,0.06);padding:6px 8px;border-radius:6px;margin-top:4px"><div class="cc-info" style="font-size:11px;font-family:monospace">📋 ${esc(prAct.numPR||'—')}</div><div class="cc-info" style="font-size:11px">${prAct.fechaSolicitud?fmtDate(prAct.fechaSolicitud):''}</div></div>`:''}
         <div class="client-card-footer">
           <div class="actions-cell"><button class="btn-detail" onclick="verDetalle(${jsArg(c.id)})">🔍 Ver más</button>${waBtn}</div>
           <div class="actions-cell"><button class="icon-btn" title="${c.suspendido?'Reactivar':'Suspender'}" onclick="toggleSuspender(${jsArg(c.id)})">${c.suspendido?'▶️':'⏸️'}</button><button class="icon-btn" onclick="confirmDel(${jsArg(c.id)},${jsArg(nm)},'sinrenovar')">🗑️</button></div>
@@ -4069,7 +4003,7 @@ function renderDBTable(){
         <div class="client-card-top"><div class="client-card-name">${c.nombre}</div><span class="badge ${bc}">${bt}</span></div>
         <div class="client-card-row"><div class="cc-info">📞 <span>${c.tel||'—'}</span></div><div class="cc-sl">${c.numPR||'—'}</div></div>
         <div class="client-card-row"><div class="cc-info">👤 Asesor: <span>${c.asesor||'—'}</span></div><div class="cc-info" style="font-size:11px;color:${diasRest<=5?'var(--danger)':'var(--muted)'}">${diasRest}d restantes</div></div>
-        <div class="client-card-row"><div class="cc-info">📅 Solicitud: <span>${fmtDate(c.fechaSolicitud)}</span></div><div class="cc-info">🏦 <span>${c.tipocred||'—'}</span></div></div>
+        <div class="client-card-row"><div class="cc-info">📅 Solicitud: <span>${fmtDate(c.fechaSolicitud)}</span></div></div>
         ${c.detallesPR?`<div style="font-size:12px;color:var(--muted);margin-bottom:4px;padding:6px 0;border-top:1px solid var(--border)">📝 ${c.detallesPR}</div>`:''}
         <div class="client-card-footer">
           <div class="actions-cell">${currentDB==='pr-aprobadas'?waBtn:''}</div>
@@ -4213,7 +4147,6 @@ function verDetalle(id){
         <div style="background:${colorBg};border:1px solid ${colorBorder};border-radius:var(--r);padding:12px">
           <div style="font-size:13px;font-weight:600;color:${colorTitulo};margin-bottom:8px">${titulo}</div>
           <div class="detail-row"><span class="detail-label">N° PR</span><span class="detail-val detail-mono">${esc(prAct.numPR||'—')}</span></div>
-          <div class="detail-row"><span class="detail-label">Tipo</span><span class="detail-val">${esc(prAct.tipocred||'—')}</span></div>
           <div class="detail-row"><span class="detail-label">Asesor</span><span class="detail-val">${esc(prAct.asesor||'—')}</span></div>
           <div class="detail-row"><span class="detail-label">Fecha solicitud</span><span class="detail-val">${prAct.fechaSolicitud?fmtDate(prAct.fechaSolicitud):'—'}</span></div>
           ${prAct.detallesPR?`<div style="font-size:12px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);white-space:pre-wrap">${esc(prAct.detallesPR)}</div>`:''}
@@ -5396,14 +5329,12 @@ function openPRModal(cat,id){
     document.getElementById('mpr-num').value=c.numPR||'';
     document.getElementById('mpr-asesor').value=c.asesor||'';
     document.getElementById('mpr-fecha-sol').value=c.fechaSolicitud||'';
-    document.getElementById('mpr-tipocred').value=c.tipocred||'';
     document.getElementById('mpr-detalles').value=c.detallesPR||'';
     wa.classList.toggle('on',c.tieneWA!==false);
   } else {
     ['mpr-nombre','mpr-tel','mpr-detalles'].forEach(f=>document.getElementById(f).value='');
     document.getElementById('mpr-num').value='PR';
     document.getElementById('mpr-asesor').value='';
-    document.getElementById('mpr-tipocred').value='';
     document.getElementById('mpr-fecha-sol').value=today();
     wa.classList.add('on');
   }
@@ -5424,14 +5355,12 @@ function guardarPR(){
   const cat=document.getElementById('mpr-cat').value;
   const asesor=document.getElementById('mpr-asesor').value;
   const fechaSolicitud=document.getElementById('mpr-fecha-sol').value;
-  const tipocred=document.getElementById('mpr-tipocred').value;
   const detallesPR=sanitizarInput(document.getElementById('mpr-detalles').value.trim());
   if(!nombre){document.getElementById('mpr-err').textContent='El nombre es requerido.';return}
   if(!tel||tel.length!==10||!/^\d+$/.test(tel)){document.getElementById('mpr-err').textContent='Teléfono: 10 dígitos.';return}
   if(!/^PR\d{12}$/.test(numPR)){document.getElementById('mpr-err').textContent='PR: PR + 12 dígitos.';return}
   if(!asesor){document.getElementById('mpr-err').textContent='Selecciona el asesor.';return}
   if(!fechaSolicitud){document.getElementById('mpr-err').textContent='La fecha de solicitud es requerida.';return}
-  if(!tipocred){document.getElementById('mpr-err').textContent='Selecciona el tipo (Financing o Créditos).';return}
   const id=document.getElementById('mpr-id').value;
   const ex=id?clientes.find(x=>x.id===id):{};
 
@@ -5451,7 +5380,7 @@ function guardarPR(){
     if(candidatos.length){
       // Guardar datos pendientes y mostrar modal de confirmación
       _prPendiente = {
-        nombre, tel, tieneWA, numPR, cat, asesor, fechaSolicitud, tipocred, detallesPR,
+        nombre, tel, tieneWA, numPR, cat, asesor, fechaSolicitud, detallesPR,
         candidatos
       };
       _renderModalCoincidenciaPR();
@@ -5460,16 +5389,16 @@ function guardarPR(){
   }
 
   // Sin coincidencia o es edición: guardar normal
-  _guardarPRNormal({id, nombre, tel, tieneWA, numPR, cat, asesor, fechaSolicitud, tipocred, detallesPR, ex});
+  _guardarPRNormal({id, nombre, tel, tieneWA, numPR, cat, asesor, fechaSolicitud, detallesPR, ex});
 }
 
 // Guardado normal (sin coincidencia o es edición)
-function _guardarPRNormal({id, nombre, tel, tieneWA, numPR, cat, asesor, fechaSolicitud, tipocred, detallesPR, ex}){
-  const obj={id:id||Date.now().toString(),nombre,tel,tieneWA,numPR,asesor,fechaSolicitud,tipocred,detallesPR,categoria:cat,pagosConfirmados:[],estatus:'al-corriente',fechaIngresoPR:(ex&&ex.fechaIngresoPR)||today(),seguimiento:(ex&&ex.seguimiento)||null};
+function _guardarPRNormal({id, nombre, tel, tieneWA, numPR, cat, asesor, fechaSolicitud, detallesPR, ex}){
+  const obj={id:id||Date.now().toString(),nombre,tel,tieneWA,numPR,asesor,fechaSolicitud,detallesPR,categoria:cat,pagosConfirmados:[],estatus:'al-corriente',fechaIngresoPR:(ex&&ex.fechaIngresoPR)||today(),seguimiento:(ex&&ex.seguimiento)||null};
   if(id){const i=clientes.findIndex(x=>x.id===id);clientes[i]=obj;
     registrarAuditoria(AUDIT_TIPOS.CLIENTE_EDITAR,{clienteId:id,nombre,numPR,categoria:cat});
   } else {clientes.push(obj);
-    registrarAuditoria(AUDIT_TIPOS.CLIENTE_CREAR,{clienteId:obj.id,nombre,numPR,categoria:cat,asesor,tipocred});
+    registrarAuditoria(AUDIT_TIPOS.CLIENTE_CREAR,{clienteId:obj.id,nombre,numPR,categoria:cat,asesor});
   }
   save('ca_clientes',clientes);closeModal('modal-pr');renderDBButtons();
 }
@@ -5535,7 +5464,6 @@ function _confirmarAdjuntarPR(idx){
     numPR: p.numPR,
     asesor: p.asesor,
     fechaSolicitud: p.fechaSolicitud,
-    tipocred: p.tipocred,
     detallesPR: p.detallesPR,
     estatus: p.cat==='pr-aprobadas' ? 'aprobada' : 'rechazada',
     fechaIngresoPR: today(),
@@ -5551,7 +5479,6 @@ function _confirmarAdjuntarPR(idx){
     numPR: p.numPR,
     asesor: p.asesor,
     fechaSolicitud: p.fechaSolicitud,
-    tipocred: p.tipocred,
     detallesPR: p.detallesPR,
     categoria: p.cat,
     pagosConfirmados: [],
@@ -5564,7 +5491,7 @@ function _confirmarAdjuntarPR(idx){
   clientes.push(nuevoPR);
 
   save('ca_clientes', clientes);
-  registrarAuditoria(AUDIT_TIPOS.CLIENTE_CREAR, {clienteId:nuevoPR.id, nombre:p.nombre, numPR:p.numPR, categoria:p.cat, asesor:p.asesor, tipocred:p.tipocred, vinculadoSinRenovar:clientes[i].id});
+  registrarAuditoria(AUDIT_TIPOS.CLIENTE_CREAR, {clienteId:nuevoPR.id, nombre:p.nombre, numPR:p.numPR, categoria:p.cat, asesor:p.asesor, vinculadoSinRenovar:clientes[i].id});
 
   _prPendiente = null;
   closeModal('modal-coincidencia-pr');
@@ -5579,7 +5506,7 @@ function _omitirCoincidenciaPR(){
   _prPendiente = null;
   closeModal('modal-coincidencia-pr');
   // Llamar guardado normal
-  _guardarPRNormal({id:'', nombre:p.nombre, tel:p.tel, tieneWA:p.tieneWA, numPR:p.numPR, cat:p.cat, asesor:p.asesor, fechaSolicitud:p.fechaSolicitud, tipocred:p.tipocred, detallesPR:p.detallesPR, ex:{}});
+  _guardarPRNormal({id:'', nombre:p.nombre, tel:p.tel, tieneWA:p.tieneWA, numPR:p.numPR, cat:p.cat, asesor:p.asesor, fechaSolicitud:p.fechaSolicitud, detallesPR:p.detallesPR, ex:{}});
   showToast('✓ Registrado como cliente nuevo en PR');
 }
 
@@ -5684,9 +5611,15 @@ let _diasBloqueoCat = {
   'pr-aprobadas': 7,
 };
 
+// Días de bloqueo de una categoría de mensajes. Los prospectos verificados usan los de prospectos.
+function _diasBloqueo(cat){
+  const clave = cat==='prospectos-verificados' ? 'prospectos' : cat;
+  return _diasBloqueoCat[clave]||7;
+}
+
 // Devuelve el ms de bloqueo para una categoría concreta
 function _msBloqueoParaCat(cat){
-  const dias=_diasBloqueoCat[cat]||7;
+  const dias=_diasBloqueo(cat);
   return dias*24*60*60*1000;
 }
 
@@ -5711,7 +5644,7 @@ function _actualizarTextosDiasBloqueo(){
   // Párrafo del modal de bloqueados — usa los días de la categoría de mensajes activa
   const pm=document.getElementById('bloqueados-dias-texto');
   if(pm){
-    const dias=_diasBloqueoCat[mensajesMasivosCat]||7;
+    const dias=_diasBloqueo(mensajesMasivosCat);
     pm.textContent=`Estos contactos recibieron un mensaje en los últimos ${dias} días. Puedes desmarcarlos para incluirlos de nuevo.`;
   }
 }
@@ -6391,13 +6324,13 @@ function cambiarMasivosPorPagina(nuevoVal){
 // MENSAJES PREDETERMINADOS
 // ════════════════════════════════════════════════
 let _msgPredCatActual = null;
-let _msgPredTabExtra = 'macro'; // 'macro' | 'linea' | 'financing' | 'creditos'
+let _msgPredTabExtra = 'macro'; // 'macro' | 'linea' | 'pr'
 
 // Sub-tipos disponibles por categoría
 const MSGPRED_SUBTIPOS = {
   'sinrenovar':    [{key:'macro',label:'💰 Macropesos'},{key:'linea',label:'📊 Línea de crédito'}],
   'porfinalizar':  [{key:'macro',label:'📢 Promociones'}],
-  'pr-aprobadas':  [{key:'financing',label:'💼 Financing'},{key:'creditos',label:'💳 Créditos'}]
+  'pr-aprobadas':  [{key:'pr',label:'✅ PR aprobada'}]
 };
 
 // ════════════════════════════════════════════════
@@ -6526,7 +6459,9 @@ function confirmarPaseSinRenovar(notifId, clienteId){
   }
   quickConfirm(
     'Confirmar fin de crédito',
-    `¿Confirmas que el crédito de <strong style="color:var(--text)">${esc(c.nombre)}</strong> ya finalizó? Pasará a Sin renovar.`,
+    (c.dobleFinId && clientes.some(x=>x.id===c.dobleFinId&&x.categoria==='activos'))
+      ? `¿Confirmas que el crédito ${esc(c.sl||'')} de <strong style="color:var(--text)">${esc(c.nombre)}</strong> ya finalizó? Pasará al historial de su otro crédito activo.`
+      : `¿Confirmas que el crédito de <strong style="color:var(--text)">${esc(c.nombre)}</strong> ya finalizó? Pasará a Sin renovar.`,
     '✓ Sí, finalizar',
     null,
     ()=>{
@@ -6581,13 +6516,6 @@ function openRecordatoriosPlantillas(){
 }
 
 const REC_SUBGRUPOS = {
-  'pagos': {
-    titulo: '💵 Pagos',
-    opciones: [
-      {tipo:'primerospagos',  icon:'💵', label:'Pagos de hoy',   desc:'Recordatorio cuando el pago vence hoy'},
-      {tipo:'pagosatrasados', icon:'⚠️', label:'Pagos atrasados', desc:'Recordatorio para pagos vencidos sin confirmar'}
-    ]
-  },
   'macropesos': {
     titulo: '💰 Macropesos',
     opciones: [
@@ -7230,12 +7158,34 @@ function aplicarFiltroMacroMin(){
   openRecLista('macropesos-disp');
 }
 
+// Plazos (semanas) que no aparecen en Crédito disponible
+const PLAZOS_SIN_CREDITO_DISP = [78, 104, 125];
+
+// Ids de créditos activos cuyo titular tiene otro crédito activo: por dobleFinId (en
+// cualquier dirección) o por la misma persona (CURP, si no teléfono) registrada dos veces.
+function _conVariosCreditosActivos(){
+  const activos = clientes.filter(c=>c.categoria==='activos' && !c.inhabilitado);
+  const ids = new Set(activos.map(c=>c.id));
+  const res = new Set();
+  activos.forEach(c=>{ if(c.dobleFinId && ids.has(c.dobleFinId)){ res.add(c.id); res.add(c.dobleFinId); } });
+  const porPersona = {};
+  activos.forEach(c=>{
+    const curp = (c.curp||'').trim().toUpperCase();
+    const tel = (c.tel||'').replace(/\D/g,'');
+    const clave = curp ? 'c:'+curp : (tel.length>=10 ? 't:'+tel : '');
+    if(clave) (porPersona[clave] = porPersona[clave] || []).push(c.id);
+  });
+  Object.values(porPersona).forEach(l=>{ if(l.length>1) l.forEach(id=>res.add(id)); });
+  return res;
+}
+
 // Guardar línea de crédito de un cliente sin enviar mensaje
 function openRecCreditoDisp(){
   _recListaTipoActual = 'credito-disp';
   document.getElementById('rec-lista-title').textContent = '📊 Crédito disponible';
 
   const ahora = Date.now();
+  const conDosCreditos = _conVariosCreditosActivos();
   // Más de la mitad pagada Y más de 6 semanas restantes, AL-CORRIENTE
   let lista = clientes.filter(c=>{
     if(c.categoria!=='activos')return false;
@@ -7244,11 +7194,10 @@ function openRecCreditoDisp(){
     if(c.suspendido)return false;
     // No incluir clientes que están pagando un préstamo (solo créditos de compra)
     if(_normNombre(c.tipo)==='prestamo')return false;
-    // No incluir clientes con doble financiamiento (ya tienen 2 líneas de crédito activas)
-    if(c.dobleFinId){
-      const otro=clientes.find(x=>x.id===c.dobleFinId&&x.categoria==='activos');
-      if(otro)return false;
-    }
+    // No incluir clientes con dos créditos activos (vinculados o la misma persona dos veces)
+    if(conDosCreditos.has(c.id))return false;
+    // Plazos largos no reciben esta oferta
+    if(PLAZOS_SIN_CREDITO_DISP.includes(parseInt(c.semanas)))return false;
     // Suspensión específica de crédito disponible
     if(c.suspendidoCreditoDisp && ahora < c.suspendidoCreditoDisp) return false;
     if(!c.fechaCompra||!c.semanas)return false;
@@ -7649,23 +7598,48 @@ function openCatalogos(){
   openModal('modal-catalogos');
 }
 
-// === CELULARES (marcas → modelos) ===
-function openCatalogoCelulares(){
+// === CELULARES Y PANTALLAS (marcas → modelos, dentro de ca_catalogo_productos) ===
+let _catMarcaCategoria = 'Celulares';
+
+function _catMarcasDe(cat){
+  const v = catalogoProductos[cat];
+  return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+}
+
+// Guarda los modelos de una marca. Si la categoría aún tiene la lista anterior (sin marcas), se reemplaza.
+function _catGuardarMarca(cat, marca, modelos){
+  const actual = catalogoProductos[cat];
+  const sinMarcas = !actual || Array.isArray(actual) || typeof actual !== 'object';
+  if(sinMarcas){
+    const nuevo = {}; nuevo[marca] = modelos;
+    catalogoProductos[cat] = nuevo;
+    return db.ref('ca_catalogo_productos/'+cat).set(modelos.length ? nuevo : null);
+  }
+  actual[marca] = modelos;
+  return db.ref('ca_catalogo_productos/'+cat+'/'+marca).set(modelos.length ? modelos : null);
+}
+
+function openCatalogoCelulares(){ openCatalogoMarcas('Celulares'); }
+
+function openCatalogoMarcas(cat){
+  _catMarcaCategoria = cat;
+  document.getElementById('cat-marcas-title').textContent = `${CAT_PRODUCTOS_ICONS[cat]||'📦'} ${cat} — Marcas`;
   renderCatalogoCelulares();
   openModal('modal-cat-celulares');
 }
 
 function renderCatalogoCelulares(){
   const el = document.getElementById('cat-celulares-list');
-  const marcas = Object.keys(catalogoCelulares).sort();
+  const porMarca = _catMarcasDe(_catMarcaCategoria);
+  const marcas = Object.keys(porMarca).sort((a,b)=>a.localeCompare(b));
   if(!marcas.length){
-    el.innerHTML = `<p style="color:var(--muted);font-size:13px;text-align:center;padding:1rem">Sin marcas registradas. Agrega la primera abajo.</p>`;
+    el.innerHTML = `<p style="color:var(--muted);font-size:13px;text-align:center;padding:1rem">Sin marcas. Agrega la primera abajo.</p>`;
     return;
   }
   el.innerHTML = `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:4px;max-height:50vh;overflow-y:auto">
     ${marcas.map(m=>{
-      const cantidad = (catalogoCelulares[m]||[]).length;
-      return`<div style="display:flex;align-items:center;gap:6px;padding:8px 6px;border-bottom:1px solid var(--border)">
+      const cantidad = (porMarca[m]||[]).length;
+      return `<div style="display:flex;align-items:center;gap:6px;padding:8px 6px;border-bottom:1px solid var(--border)">
         <div style="flex:1;cursor:pointer" onclick="openCatalogoCelularesMarca(${jsArg(m)})">
           <div style="font-size:13px;font-weight:500;color:var(--text)">${esc(m)}</div>
           <div style="font-size:11px;color:var(--muted)">${cantidad} modelo${cantidad===1?'':'s'}</div>
@@ -7681,15 +7655,12 @@ function agregarMarcaCelular(){
   const input = document.getElementById('cat-celulares-nueva-marca');
   const marca = sanitizarInput(input.value).trim();
   if(!marca){showToast('Escribe una marca',true);return}
-  if(catalogoCelulares[marca]){showToast('Esa marca ya existe',true);return}
-  catalogoCelulares[marca] = [];
-  db.ref('ca_catalogo_celulares/'+marca).set([])
-    .then(()=>{
-      input.value='';
-      renderCatalogoCelulares();
-      showToast('✓ Marca agregada');
-    })
-    .catch(()=>showToast('Error al guardar',true));
+  if(/[.#$\[\]\/]/.test(marca)){showToast('La marca no puede llevar . # $ [ ] /',true);return}
+  const porMarca = _catMarcasDe(_catMarcaCategoria);
+  if(Object.keys(porMarca).some(m=>m.toLowerCase()===marca.toLowerCase())){showToast('Esa marca ya existe',true);return}
+  input.value='';
+  // Se guarda en Firebase al agregar su primer modelo
+  openCatalogoCelularesMarca(marca);
 }
 
 function confirmarEliminarMarcaCelular(marca){
@@ -7699,8 +7670,9 @@ function confirmarEliminarMarcaCelular(marca){
     '🗑 Eliminar',
     'var(--danger)',
     ()=>{
-      delete catalogoCelulares[marca];
-      db.ref('ca_catalogo_celulares/'+marca).remove()
+      const porMarca = _catMarcasDe(_catMarcaCategoria);
+      delete porMarca[marca];
+      db.ref('ca_catalogo_productos/'+_catMarcaCategoria+'/'+marca).remove()
         .then(()=>{
           renderCatalogoCelulares();
           showToast('✓ Marca eliminada');
@@ -7712,7 +7684,7 @@ function confirmarEliminarMarcaCelular(marca){
 
 function openCatalogoCelularesMarca(marca){
   _catCelMarcaActual = marca;
-  document.getElementById('cat-cel-modelos-title').textContent = `📱 ${marca}`;
+  document.getElementById('cat-cel-modelos-title').textContent = `${CAT_PRODUCTOS_ICONS[_catMarcaCategoria]||'📦'} ${_catMarcaCategoria} · ${marca}`;
   renderCatalogoCelularesMarca();
   closeModal('modal-cat-celulares');
   setTimeout(()=>openModal('modal-cat-celular-modelos'),50);
@@ -7720,7 +7692,7 @@ function openCatalogoCelularesMarca(marca){
 
 function renderCatalogoCelularesMarca(){
   const el = document.getElementById('cat-cel-modelos-list');
-  const modelos = catalogoCelulares[_catCelMarcaActual]||[];
+  const modelos = _catMarcasDe(_catMarcaCategoria)[_catCelMarcaActual]||[];
   if(!modelos.length){
     el.innerHTML = `<p style="color:var(--muted);font-size:13px;text-align:center;padding:1rem">Sin modelos. Agrega el primero abajo.</p>`;
     return;
@@ -7738,11 +7710,10 @@ function agregarModeloCelular(){
   const input = document.getElementById('cat-cel-modelos-nuevo');
   const modelo = sanitizarInput(input.value).trim();
   if(!modelo){showToast('Escribe un modelo',true);return}
-  const modelos = catalogoCelulares[_catCelMarcaActual]||[];
-  if(modelos.includes(modelo)){showToast('Ese modelo ya existe',true);return}
+  const modelos = (_catMarcasDe(_catMarcaCategoria)[_catCelMarcaActual]||[]).slice();
+  if(modelos.some(m=>m.toLowerCase()===modelo.toLowerCase())){showToast('Ese modelo ya existe',true);return}
   modelos.push(modelo);
-  catalogoCelulares[_catCelMarcaActual] = modelos;
-  db.ref('ca_catalogo_celulares/'+_catCelMarcaActual).set(modelos)
+  _catGuardarMarca(_catMarcaCategoria, _catCelMarcaActual, modelos)
     .then(()=>{
       input.value='';
       renderCatalogoCelularesMarca();
@@ -7752,7 +7723,7 @@ function agregarModeloCelular(){
 }
 
 function confirmarEliminarModeloCelular(idx){
-  const modelos = catalogoCelulares[_catCelMarcaActual]||[];
+  const modelos = (_catMarcasDe(_catMarcaCategoria)[_catCelMarcaActual]||[]).slice();
   const modelo = modelos[idx];
   if(!modelo)return;
   quickConfirm(
@@ -7762,8 +7733,7 @@ function confirmarEliminarModeloCelular(idx){
     'var(--danger)',
     ()=>{
       modelos.splice(idx,1);
-      catalogoCelulares[_catCelMarcaActual] = modelos;
-      db.ref('ca_catalogo_celulares/'+_catCelMarcaActual).set(modelos)
+      _catGuardarMarca(_catMarcaCategoria, _catCelMarcaActual, modelos)
         .then(()=>{
           renderCatalogoCelularesMarca();
           showToast('✓ Modelo eliminado');
@@ -7774,8 +7744,21 @@ function confirmarEliminarModeloCelular(idx){
 }
 
 // === PRODUCTOS (categorías fijas → modelos) ===
-const CAT_PRODUCTOS_FIJOS = ['iPhone','Pantallas','Bicis','Motos','Accesorios'];
-const CAT_PRODUCTOS_ICONS = {iPhone:'📱',Pantallas:'📺',Bicis:'🚲',Motos:'🏍️',Accesorios:'🎧'};
+const CAT_PRODUCTOS_FIJOS = ['iPhone','Celulares','Pantallas','Bicis','Motos','Accesorios'];
+const CAT_CON_MARCA = ['Celulares','Pantallas'];
+const CAT_PRODUCTOS_ICONS = {iPhone:'📱',Celulares:'📲',Pantallas:'📺',Bicis:'🚲',Motos:'🏍️',Accesorios:'🎧'};
+// Palabra que va antes de marca y modelo en [producto]
+const CAT_PRODUCTO_ETIQUETA = {iPhone:'iPhone',Celulares:'Celular',Pantallas:'Pantalla',Bicis:'Bici',Motos:'Moto',Accesorios:''};
+
+// "Celular Samsung Galaxy A15", "iPhone 15 Pro", "Moto Italika FT150"
+function _descripcionProducto(cat, marca, modelo){
+  const etiqueta = CAT_PRODUCTO_ETIQUETA[cat] ?? cat;
+  const resto = [marca, modelo].filter(Boolean).join(' ');
+  const partes = [];
+  if(etiqueta && !resto.toLowerCase().startsWith(etiqueta.toLowerCase())) partes.push(etiqueta);
+  if(resto) partes.push(resto);
+  return partes.join(' ');
+}
 
 function openCatalogoProductos(){
   renderCatalogoProductos();
@@ -7785,13 +7768,16 @@ function openCatalogoProductos(){
 function renderCatalogoProductos(){
   const el = document.getElementById('cat-productos-list');
   el.innerHTML = CAT_PRODUCTOS_FIJOS.map(cat=>{
-    const cantidad = (catalogoProductos[cat]||[]).length;
-    return`<button class="btn-detail" style="justify-content:flex-start;padding:12px;text-align:left" onclick="openCatalogoProductoCategoria(${jsArg(cat)})">
+    const conMarca = CAT_CON_MARCA.includes(cat);
+    const porMarca = conMarca ? _catMarcasDe(cat) : null;
+    const cantidad = conMarca ? Object.values(porMarca).reduce((t,l)=>t+(l||[]).length,0) : (Array.isArray(catalogoProductos[cat])?catalogoProductos[cat]:[]).length;
+    const accion = conMarca ? `closeModal('modal-cat-productos');setTimeout(()=>openCatalogoMarcas(${jsArg(cat)}),50)` : `openCatalogoProductoCategoria(${jsArg(cat)})`;
+    return`<button class="btn-detail" style="justify-content:flex-start;padding:12px;text-align:left" onclick="${accion}">
       <div style="display:flex;align-items:center;gap:10px;width:100%">
         <div style="font-size:18px">${CAT_PRODUCTOS_ICONS[cat]||'📦'}</div>
         <div style="flex:1">
           <div style="font-weight:600;font-size:14px;color:var(--text)">${cat}</div>
-          <div style="font-size:11px;color:var(--muted)">${cantidad} modelo${cantidad===1?'':'s'}</div>
+          <div style="font-size:11px;color:var(--muted)">${conMarca?`${Object.keys(porMarca).length} marca${Object.keys(porMarca).length===1?'':'s'} · `:''}${cantidad} modelo${cantidad===1?'':'s'}</div>
         </div>
         <div style="color:var(--muted)">›</div>
       </div>
@@ -7924,17 +7910,6 @@ function confirmarEliminarModeloProducto(idx){
 }
 
 // === Helpers para selectores en envío ===
-function _buildEquipoOptions(){
-  // Construye <option> con todas las marcas y sus modelos como optgroup
-  const marcas = Object.keys(catalogoCelulares).sort();
-  if(!marcas.length) return '<option value="" disabled>Sin marcas configuradas</option>';
-  return marcas.map(m=>{
-    const modelos = catalogoCelulares[m]||[];
-    if(!modelos.length) return '';
-    return `<optgroup label="${esc(m)}">${modelos.map(mod=>`<option value="${esc(m+' '+mod)}">${esc(mod)}</option>`).join('')}</optgroup>`;
-  }).join('');
-}
-
 function _buildTiposProductoOptions(){
   return CAT_PRODUCTOS_FIJOS.map(cat=>`<option value="${esc(cat)}">${cat}</option>`).join('');
 }
@@ -7947,16 +7922,44 @@ function _modeloPrecio(m){
   return (typeof m === 'object' && m !== null && m.precio!=null) ? parseFloat(m.precio) : null;
 }
 
-function _actualizarModelosCreditos(clienteId){
-  const tipoSel = document.getElementById('tipoprod-'+clienteId);
+// Selector de producto en PR aprobadas: categoría → (marca) → modelo
+function _prCambioCategoria(clienteId){
+  const cat = document.getElementById('tipoprod-'+clienteId)?.value || '';
+  const marcaSel = document.getElementById('marca-'+clienteId);
   const modeloSel = document.getElementById('modelo-'+clienteId);
-  if(!tipoSel||!modeloSel)return;
-  const cat = tipoSel.value;
-  const modelos = (catalogoProductos[cat]||[]);
-  modeloSel.innerHTML = '<option value="">Modelo</option>' + modelos.map(m=>{
-    const n = _modeloNombre(m);
-    return `<option value="${esc(n)}">${esc(n)}</option>`;
-  }).join('');
+  if(!marcaSel||!modeloSel)return;
+  if(CAT_CON_MARCA.includes(cat)){
+    const marcas = Object.keys(_catMarcasDe(cat)).sort((a,b)=>a.localeCompare(b));
+    marcaSel.innerHTML = '<option value="">Marca</option>' + marcas.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');
+    marcaSel.style.display = '';
+    modeloSel.innerHTML = '<option value="">Modelo</option>';
+  } else {
+    marcaSel.innerHTML = '<option value=""></option>';
+    marcaSel.style.display = 'none';
+    const modelos = Array.isArray(catalogoProductos[cat]) ? catalogoProductos[cat] : [];
+    modeloSel.innerHTML = '<option value="">Modelo</option>' + modelos.map(m=>{
+      const n = _modeloNombre(m);
+      return `<option value="${esc(n)}">${esc(n)}</option>`;
+    }).join('');
+  }
+}
+
+function _prCambioMarca(clienteId){
+  const cat = document.getElementById('tipoprod-'+clienteId)?.value || '';
+  const marca = document.getElementById('marca-'+clienteId)?.value || '';
+  const modeloSel = document.getElementById('modelo-'+clienteId);
+  if(!modeloSel)return;
+  const modelos = _catMarcasDe(cat)[marca] || [];
+  modeloSel.innerHTML = '<option value="">Modelo</option>' + modelos.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');
+}
+
+// Texto completo del producto elegido, o '' si falta algo
+function _prProductoElegido(clienteId){
+  const cat = document.getElementById('tipoprod-'+clienteId)?.value || '';
+  const modelo = document.getElementById('modelo-'+clienteId)?.value || '';
+  if(!cat || !modelo) return '';
+  const marca = CAT_CON_MARCA.includes(cat) ? (document.getElementById('marca-'+clienteId)?.value || '') : '';
+  return _descripcionProducto(cat, marca, modelo);
 }
 
 function openMensajesPredeterminados(){
@@ -7980,25 +7983,16 @@ function openMsgPredEditor(cat){
   document.getElementById('msgpred-cuerpo').value = data.cuerpo || '';
   document.getElementById('msgpred-cuerpo-macro').value = data.cuerpoMacro || '';
   document.getElementById('msgpred-cuerpo-linea').value = data.cuerpoLinea || '';
-  document.getElementById('msgpred-cuerpo-financing').value = data.cuerpoFinancing || '';
-  document.getElementById('msgpred-cuerpo-creditos').value = data.cuerpoCreditos || '';
-  const advFinTxt = document.getElementById('msgpred-cuerpo-financing-adv');
-  const advCredTxt = document.getElementById('msgpred-cuerpo-creditos-adv');
-  if(advFinTxt) advFinTxt.value = data.cuerpoFinancingAdv || '';
-  if(advCredTxt) advCredTxt.value = data.cuerpoCreditosAdv || '';
+  document.getElementById('msgpred-cuerpo-pr').value = data.cuerpoPR || '';
+  const advPRTxt = document.getElementById('msgpred-cuerpo-pr-adv');
+  if(advPRTxt) advPRTxt.value = data.cuerpoPRAdv || '';
 
   // Cargar estado de "Opciones avanzadas" para PR aprobadas
-  const advFinTog = document.getElementById('adv-financing-toggle');
-  const advFinPanel = document.getElementById('adv-financing-panel');
-  const advCredTog = document.getElementById('adv-creditos-toggle');
-  const advCredPanel = document.getElementById('adv-creditos-panel');
-  if(advFinTog){
-    if(data.advFinancing){advFinTog.classList.add('on');advFinPanel.style.display='block'}
-    else {advFinTog.classList.remove('on');advFinPanel.style.display='none'}
-  }
-  if(advCredTog){
-    if(data.advCreditos){advCredTog.classList.add('on');advCredPanel.style.display='block'}
-    else {advCredTog.classList.remove('on');advCredPanel.style.display='none'}
+  const advPRTog = document.getElementById('adv-pr-toggle');
+  const advPRPanel = document.getElementById('adv-pr-panel');
+  if(advPRTog){
+    if(data.advPR){advPRTog.classList.add('on');advPRPanel.style.display='block'}
+    else {advPRTog.classList.remove('on');advPRPanel.style.display='none'}
   }
 
   // Construir tabs según la categoría
@@ -8083,18 +8077,12 @@ function insertarPlaceholder(targetId, placeholder){
   actualizarVistaPreviaMsgPred();
 }
 
-function toggleAvanzadasFinancing(){
-  const tog = document.getElementById('adv-financing-toggle');
-  const panel = document.getElementById('adv-financing-panel');
+function toggleAvanzadasPR(){
+  const tog = document.getElementById('adv-pr-toggle');
+  const panel = document.getElementById('adv-pr-panel');
   tog.classList.toggle('on');
   panel.style.display = tog.classList.contains('on') ? 'block' : 'none';
-}
-
-function toggleAvanzadasCreditos(){
-  const tog = document.getElementById('adv-creditos-toggle');
-  const panel = document.getElementById('adv-creditos-panel');
-  tog.classList.toggle('on');
-  panel.style.display = tog.classList.contains('on') ? 'block' : 'none';
+  actualizarVistaPreviaMsgPred();
 }
 
 function actualizarVistaPreviaMsgPred(){
@@ -8103,12 +8091,9 @@ function actualizarVistaPreviaMsgPred(){
   const cuerpo = document.getElementById('msgpred-cuerpo').value;
   const cuerpoMacro = document.getElementById('msgpred-cuerpo-macro').value;
   const cuerpoLinea = document.getElementById('msgpred-cuerpo-linea').value;
-  const cuerpoFinancing = document.getElementById('msgpred-cuerpo-financing').value;
-  const cuerpoCreditos = document.getElementById('msgpred-cuerpo-creditos').value;
-  const cuerpoFinancingAdv = document.getElementById('msgpred-cuerpo-financing-adv')?.value || '';
-  const cuerpoCreditosAdv = document.getElementById('msgpred-cuerpo-creditos-adv')?.value || '';
-  const advFinancingOn = document.getElementById('adv-financing-toggle')?.classList.contains('on') || false;
-  const advCreditosOn = document.getElementById('adv-creditos-toggle')?.classList.contains('on') || false;
+  const cuerpoPR = document.getElementById('msgpred-cuerpo-pr').value;
+  const cuerpoPRAdv = document.getElementById('msgpred-cuerpo-pr-adv')?.value || '';
+  const advPROn = document.getElementById('adv-pr-toggle')?.classList.contains('on') || false;
   const previewEl = document.getElementById('msgpred-preview');
   const tipoLabel = document.getElementById('preview-tipo-label');
 
@@ -8123,13 +8108,10 @@ function actualizarVistaPreviaMsgPred(){
     } else if(_msgPredTabExtra==='linea'){
       cuerpoExtra = cuerpoLinea;
       labelTipo = '— Promociones + Línea de crédito';
-    } else if(_msgPredTabExtra==='financing'){
+    } else if(_msgPredTabExtra==='pr'){
       // Si avanzadas activo, mostrar el cuerpo avanzado
-      cuerpoExtra = advFinancingOn && cuerpoFinancingAdv.trim() ? cuerpoFinancingAdv : cuerpoFinancing;
-      labelTipo = advFinancingOn ? '— Promociones + Financing (avanzado)' : '— Promociones + Financing';
-    } else if(_msgPredTabExtra==='creditos'){
-      cuerpoExtra = advCreditosOn && cuerpoCreditosAdv.trim() ? cuerpoCreditosAdv : cuerpoCreditos;
-      labelTipo = advCreditosOn ? '— Promociones + Créditos (avanzado)' : '— Promociones + Créditos';
+      cuerpoExtra = advPROn && cuerpoPRAdv.trim() ? cuerpoPRAdv : cuerpoPR;
+      labelTipo = advPROn ? '— Promociones + PR aprobada (avanzado)' : '— Promociones + PR aprobada';
     }
   }
   if(tipoLabel) tipoLabel.textContent = labelTipo;
@@ -8140,9 +8122,7 @@ function actualizarVistaPreviaMsgPred(){
     .replace(/\[linea de crédito\]/gi, '$10,000.00')
     .replace(/\[linea de credito\]/gi, '$10,000.00')
     .replace(/\[enganche\]/gi, '$2,000.00')
-    .replace(/\[equipo\]/gi, 'Apple iPhone 15')
-    .replace(/\[tipo de producto\]/gi, 'iPhone')
-    .replace(/\[modelo\]/gi, 'iPhone 15 Pro');
+    .replace(/\[producto\]/gi, 'Celular Samsung Galaxy A15');
 
   const cuerpoFinal = reemplazar(cuerpo);
   const cuerpoExtraFinal = reemplazar(cuerpoExtra);
@@ -8169,22 +8149,19 @@ function guardarMsgPred(){
   const cuerpo = sanitizarInput(document.getElementById('msgpred-cuerpo').value);
   const cuerpoMacro = sanitizarInput(document.getElementById('msgpred-cuerpo-macro').value);
   const cuerpoLinea = sanitizarInput(document.getElementById('msgpred-cuerpo-linea').value);
-  const cuerpoFinancing = sanitizarInput(document.getElementById('msgpred-cuerpo-financing').value);
-  const cuerpoCreditos = sanitizarInput(document.getElementById('msgpred-cuerpo-creditos').value);
-  const cuerpoFinancingAdv = sanitizarInput(document.getElementById('msgpred-cuerpo-financing-adv')?.value || '');
-  const cuerpoCreditosAdv = sanitizarInput(document.getElementById('msgpred-cuerpo-creditos-adv')?.value || '');
+  const cuerpoPR = sanitizarInput(document.getElementById('msgpred-cuerpo-pr').value);
+  const cuerpoPRAdv = sanitizarInput(document.getElementById('msgpred-cuerpo-pr-adv')?.value || '');
   const err = document.getElementById('msgpred-err');
 
-  if(!saludo.trim() && !lugar.trim() && !cuerpo.trim() && !cuerpoMacro.trim() && !cuerpoLinea.trim() && !cuerpoFinancing.trim() && !cuerpoCreditos.trim() && !cuerpoFinancingAdv.trim() && !cuerpoCreditosAdv.trim()){
+  if(!saludo.trim() && !lugar.trim() && !cuerpo.trim() && !cuerpoMacro.trim() && !cuerpoLinea.trim() && !cuerpoPR.trim() && !cuerpoPRAdv.trim()){
     err.textContent = 'Completa al menos un campo.';
     return;
   }
 
   // Estado de Opciones avanzadas (PR aprobadas)
-  const advFinancing = document.getElementById('adv-financing-toggle')?.classList.contains('on') || false;
-  const advCreditos = document.getElementById('adv-creditos-toggle')?.classList.contains('on') || false;
+  const advPR = document.getElementById('adv-pr-toggle')?.classList.contains('on') || false;
 
-  const datos = { saludo, lugar, cuerpo, cuerpoMacro, cuerpoLinea, cuerpoFinancing, cuerpoCreditos, cuerpoFinancingAdv, cuerpoCreditosAdv, advFinancing, advCreditos };
+  const datos = { saludo, lugar, cuerpo, cuerpoMacro, cuerpoLinea, cuerpoPR, cuerpoPRAdv, advPR };
   mensajesPred[_msgPredCatActual] = datos;
   db.ref('ca_mensajes_pred/' + currentUser.id + '/' + _msgPredCatActual).set(datos)
     .then(() => {
@@ -8271,7 +8248,7 @@ function _soloPrimerNombre(nombreCompleto){
 }
 
 // Construir mensaje personalizado a partir de plantilla y datos del cliente
-// tipo: 'promociones' | 'macropesos' | 'linea' | 'financing' | 'creditos'
+// tipo: 'promociones' | 'macropesos' | 'linea' | 'pr' | 'porfinalizar'
 function construirMensajePred(cat, cliente, tipo, montoLinea, montoEnganche, extras){
   const data = mensajesPred[cat];
   if(!data) return '';
@@ -8281,16 +8258,11 @@ function construirMensajePred(cat, cliente, tipo, montoLinea, montoEnganche, ext
   let cuerpoExtra = '';
   if(tipo==='macropesos') cuerpoExtra = data.cuerpoMacro || '';
   else if(tipo==='linea') cuerpoExtra = data.cuerpoLinea || '';
-  else if(tipo==='financing'){
+  else if(tipo==='pr'){
     // Si avanzadas activas y hay cuerpo avanzado, usarlo; si no, usar el básico
-    cuerpoExtra = (data.advFinancing && (data.cuerpoFinancingAdv||'').trim())
-      ? data.cuerpoFinancingAdv
-      : (data.cuerpoFinancing || '');
-  }
-  else if(tipo==='creditos'){
-    cuerpoExtra = (data.advCreditos && (data.cuerpoCreditosAdv||'').trim())
-      ? data.cuerpoCreditosAdv
-      : (data.cuerpoCreditos || '');
+    cuerpoExtra = (data.advPR && (data.cuerpoPRAdv||'').trim())
+      ? data.cuerpoPRAdv
+      : (data.cuerpoPR || '');
   }
   else if(tipo==='porfinalizar') cuerpoExtra = data.cuerpoMacro || ''; // En porfinalizar, "cuerpoMacro" sirve como cuerpo de Promociones extra
 
@@ -8301,10 +8273,8 @@ function construirMensajePred(cat, cliente, tipo, montoLinea, montoEnganche, ext
   const linea = montoLinea ? `$${parseFloat(montoLinea).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '$0.00';
   const enganche = montoEnganche ? `$${parseFloat(montoEnganche).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '$0.00';
 
-  // Datos avanzados de PR (equipo / tipo de producto / modelo)
-  const equipo = extras?.equipo || '';
-  const tipoProducto = extras?.tipoProducto || '';
-  const modelo = extras?.modelo || '';
+  // Producto elegido del catálogo, ya escrito completo (ej. "Celular Samsung Galaxy A15")
+  const producto = extras?.producto || '';
 
   // Si el cliente no tiene macropesos (0 o sin info), eliminar las líneas que contengan [macropesos]
   const eliminarLineasMacropesos = (txt) => {
@@ -8312,74 +8282,24 @@ function construirMensajePred(cat, cliente, tipo, montoLinea, montoEnganche, ext
     return txt.split(/\r?\n/).filter(linea => !/\[macropesos\]/i.test(linea)).join('\n');
   };
 
-  // Eliminar líneas con placeholders avanzados vacíos (si no se capturó equipo/tipo/modelo)
+  // Eliminar líneas con placeholders avanzados vacíos (si no se eligió producto o enganche)
   const eliminarLineasAvanzadasVacias = (txt) => {
     return txt.split(/\r?\n/).filter(ln => {
-      if(!equipo && /\[equipo\]/i.test(ln)) return false;
-      if(!tipoProducto && /\[tipo de producto\]/i.test(ln)) return false;
-      if(!modelo && /\[modelo\]/i.test(ln)) return false;
+      if(!producto && /\[producto\]/i.test(ln)) return false;
       if(!montoEnganche && /\[enganche\]/i.test(ln)) return false;
       return true;
     }).join('\n');
   };
 
-  // Mapeo de cada categoría a su forma singular y género
-  const PRODUCTO_GENERO = {
-    'iPhone':    { singular: 'iPhone',    genero: 'm' },
-    'Pantallas': { singular: 'pantalla',  genero: 'f' },
-    'Bicis':     { singular: 'bici',      genero: 'f' },
-    'Motos':     { singular: 'moto',      genero: 'f' },
-    'Accesorios':{ singular: 'accesorio', genero: 'm' }
-  };
-
-  // Adapta el artículo (el/la/los/las/un/una) que aparece justo ANTES del placeholder [tipo de producto].
-  // Solo toca esa zona del texto, nada más.
-  const adaptarArticulos = (txt) => {
-    if(!tipoProducto) return txt;
-    const info = PRODUCTO_GENERO[tipoProducto];
-    if(!info) return txt;
-    const articulos = {
-      'el': info.genero==='m' ? 'el' : 'la',
-      'un': info.genero==='m' ? 'un' : 'una',
-      'al': info.genero==='m' ? 'al' : 'a la',
-      'del': info.genero==='m' ? 'del' : 'de la',
-      'la': info.genero==='f' ? 'la' : 'el',
-      'una': info.genero==='f' ? 'una' : 'un',
-      'los': info.genero==='m' ? 'el' : 'la',
-      'unos': info.genero==='m' ? 'un' : 'una',
-      'las': info.genero==='f' ? 'la' : 'el',
-      'unas': info.genero==='f' ? 'una' : 'un'
-    };
-    // Solo el artículo justo antes de [tipo de producto]
-    // Acepta asteriscos opcionales entre el artículo y el placeholder (formato negritas de WhatsApp)
-    return txt.replace(/\b(el|la|los|las|un|una|unos|unas|al|del)(\s+\*?)\[tipo de producto\]/gi, (m, art, sep) => {
-      const artLower = art.toLowerCase();
-      let nuevoArt = articulos[artLower] || art;
-      // Preservar capitalización inicial
-      if(art[0]===art[0].toUpperCase()){
-        nuevoArt = nuevoArt.charAt(0).toUpperCase() + nuevoArt.slice(1);
-      }
-      return `${nuevoArt}${sep}[tipo de producto]`;
-    });
-  };
-
-  // Texto que reemplaza el placeholder [tipo de producto]: forma singular del producto
-  const tipoProductoTexto = tipoProducto && PRODUCTO_GENERO[tipoProducto]
-    ? PRODUCTO_GENERO[tipoProducto].singular
-    : tipoProducto;
-
   const reemplazar = (txt) => {
-    let resultado = eliminarLineasAvanzadasVacias(eliminarLineasMacropesos(txt));
-    resultado = adaptarArticulos(resultado);
+    const resultado = eliminarLineasAvanzadasVacias(eliminarLineasMacropesos(txt));
     return resultado
       .replace(/\[nombre del cliente\]/gi, nombreCorto)
       .replace(/\[macropesos\]/gi, macro)
       .replace(/\[linea de crédito\]/gi, linea)
       .replace(/\[linea de credito\]/gi, linea)
       .replace(/\[enganche\]/gi, enganche)
-      .replace(/\[equipo\]/gi, equipo)
-      .replace(/\[tipo de producto\]/gi, tipoProductoTexto)
-      .replace(/\[modelo\]/gi, modelo);
+      .replace(/\[producto\]/gi, producto);
   };
 
   const cuerpoFinal = reemplazar(cuerpoBase);
@@ -8502,31 +8422,8 @@ function openSubtipoSinRenovar(){
 }
 
 function openSubtipoPRAprobadas(){
-  _envioCatVista='subtipo-praprobadas';
-  document.getElementById('env-cat-title').textContent='✉️ Personalizados — PR aprobadas';
-  document.getElementById('env-cat-opts').innerHTML=`
-    <p style="font-size:13px;color:var(--muted);margin-bottom:6px">¿Qué tipo de mensaje vas a enviar?</p>
-    <button class="btn-detail" style="justify-content:flex-start;padding:14px;text-align:left" onclick="closeModal('modal-envio-cat');setTimeout(()=>generarListaEnvio('pr-aprobadas','financing'),50)">
-      <div style="display:flex;align-items:center;gap:12px;width:100%">
-        <div style="font-size:22px">💼</div>
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:14px;color:var(--text)">Financing</div>
-          <div style="font-size:12px;color:var(--muted)">Captura línea de crédito y enganche</div>
-        </div>
-        <div style="color:var(--muted)">›</div>
-      </div>
-    </button>
-    <button class="btn-detail" style="justify-content:flex-start;padding:14px;text-align:left" onclick="closeModal('modal-envio-cat');setTimeout(()=>generarListaEnvio('pr-aprobadas','creditos'),50)">
-      <div style="display:flex;align-items:center;gap:12px;width:100%">
-        <div style="font-size:22px">💳</div>
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:14px;color:var(--text)">Créditos</div>
-          <div style="font-size:12px;color:var(--muted)">Captura línea de crédito y enganche</div>
-        </div>
-        <div style="color:var(--muted)">›</div>
-      </div>
-    </button>`;
-  openModal('modal-envio-cat');
+  // Ya no hay subtipos (Financing / Créditos se fusionaron): va directo a la lista
+  generarListaEnvio('pr-aprobadas','pr');
 }
 
 // Lógica del botón Volver del modal-masivos: regresa al paso anterior correcto
@@ -8617,7 +8514,7 @@ function _buildMasivosPool(cat){
 
 function generarListaEnvio(cat, subtipo){
   const labels={'pr-aprobadas':'PR aprobadas','prospectos':'Prospectos','sinrenovar':'Sin renovar','porfinalizar':'Por finalizar'};
-  const subLabels={'promociones':'Promociones','macropesos':'Macropesos','linea':'Línea de crédito','financing':'Financing','creditos':'Créditos'};
+  const subLabels={'promociones':'Promociones','macropesos':'Macropesos','linea':'Línea de crédito','pr':'PR aprobada'};
   _envioSubtipoActual = subtipo || 'promociones';
   const tipoLabel=_envioTipoActual==='masivos'?'Masivos':'Personalizados';
   const subSuffix = subtipo ? ' · '+subLabels[subtipo] : '';
@@ -8763,7 +8660,7 @@ function renderListaMasivos(pool){
   // Aviso de contactos bloqueados (en masivos y personalizados)
   const avisoBloqueados = (_masivosBloqueadosCount>0)
     ? `<div style="background:var(--surface2);border:1px solid var(--warn);border-radius:var(--r);padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--warn);line-height:1.5">
-        📅 <strong>${_masivosBloqueadosCount}</strong> contacto${_masivosBloqueadosCount===1?'':'s'} no aparece${_masivosBloqueadosCount===1?'':'n'} porque recibió mensaje en los últimos ${_diasBloqueoCat[mensajesMasivosCat]||7} días
+        📅 <strong>${_masivosBloqueadosCount}</strong> contacto${_masivosBloqueadosCount===1?'':'s'} no aparece${_masivosBloqueadosCount===1?'':'n'} porque recibió mensaje en los últimos ${_diasBloqueo(mensajesMasivosCat)} días
       </div>`
     : '';
 
@@ -8848,28 +8745,22 @@ function renderListaMasivos(pool){
             </div>`;
           }
         } else if(esPRAprobadas){
-          // Auto-detectar Financing o Créditos según c.tipocred
-          const tipoPR = (c.tipocred||'').toLowerCase()==='financing' ? 'financing' : 'creditos';
-          const tipoLabel = tipoPR==='financing' ? '💼 Financing' : '💳 Créditos';
           const plantilla = mensajesPred[mensajesMasivosCat] || {};
-          const adv = tipoPR==='financing' ? plantilla.advFinancing : plantilla.advCreditos;
-          infoSecundaria = `<div style="font-size:11px;color:var(--accent);font-family:monospace">${esc(c.numPR||'—')} <span style="color:var(--muted)">· ${tipoLabel}</span></div>`;
+          const adv = !!plantilla.advPR;
+          infoSecundaria = `<div style="font-size:11px;color:var(--accent);font-family:monospace">${esc(c.numPR||'—')}</div>`;
           if(!adv){
             // Sin avanzadas: solo línea de crédito
             datoExtra = `<input type="number" id="linea-${c.id}" placeholder="Línea de crédito $" inputmode="decimal" min="0" step="100" style="font-size:12px;padding:5px 7px;margin-top:3px;width:100%" onkeypress="if(event.key==='Enter')enviarWhatsAppPersonalizado('${c.id}')">`;
           } else {
-            // Avanzadas: línea + enganche + (equipo | tipo+modelo)
-            let advHTML = '';
-            if(tipoPR==='financing'){
-              advHTML = `<select id="equipo-${c.id}" style="font-size:12px;padding:5px 7px;flex:1;min-width:120px"><option value="">Equipo</option>${_buildEquipoOptions()}</select>`;
-            } else {
-              advHTML = `<select id="tipoprod-${c.id}" onchange="_actualizarModelosCreditos(${jsArg(c.id)})" style="font-size:12px;padding:5px 7px;flex:1;min-width:90px"><option value="">Tipo prod.</option>${_buildTiposProductoOptions()}</select>
-                <select id="modelo-${c.id}" style="font-size:12px;padding:5px 7px;flex:1;min-width:90px"><option value="">Modelo</option></select>`;
-            }
+            // Avanzadas: línea + enganche + producto (categoría → marca → modelo)
             datoExtra = `<div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap">
               <input type="number" id="linea-${c.id}" placeholder="Línea $" inputmode="decimal" min="0" step="100" style="font-size:12px;padding:5px 7px;flex:1;min-width:80px">
               <input type="number" id="enganche-${c.id}" placeholder="Enganche $" inputmode="decimal" min="0" step="100" style="font-size:12px;padding:5px 7px;flex:1;min-width:80px">
-              ${advHTML}
+            </div>
+            <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap">
+              <select id="tipoprod-${c.id}" onchange="_prCambioCategoria(${jsArg(c.id)})" style="font-size:12px;padding:5px 7px;flex:1;min-width:90px"><option value="">Categoría</option>${_buildTiposProductoOptions()}</select>
+              <select id="marca-${c.id}" onchange="_prCambioMarca(${jsArg(c.id)})" style="font-size:12px;padding:5px 7px;flex:1;min-width:90px;display:none"><option value=""></option></select>
+              <select id="modelo-${c.id}" style="font-size:12px;padding:5px 7px;flex:1;min-width:90px"><option value="">Modelo</option></select>
             </div>`;
           }
         } else if(esPorFinalizar){
@@ -8936,8 +8827,6 @@ function enviarWhatsAppPersonalizado(id){
     }
     mensaje = construirMensajePred(mensajesMasivosCat, c, 'linea', monto);
   } else if(esPRAprobadas){
-    // Auto-detectar Financing o Créditos según c.tipocred
-    const tipoPR = (c.tipocred||'').toLowerCase()==='financing' ? 'financing' : 'creditos';
     const inputLinea = document.getElementById('linea-'+id);
     const linea = inputLinea ? inputLinea.value.trim() : '';
     if(!linea || parseFloat(linea)<=0){
@@ -8947,10 +8836,9 @@ function enviarWhatsAppPersonalizado(id){
     }
     // Verificar si avanzadas están activas (según plantilla)
     const plantilla = mensajesPred[mensajesMasivosCat] || {};
-    const advActivo = tipoPR==='financing' ? plantilla.advFinancing : plantilla.advCreditos;
     let enganche = '';
-    let equipo = '', tipoProducto = '', modelo = '';
-    if(advActivo){
+    let producto = '';
+    if(plantilla.advPR){
       // Si avanzadas activas: pedir enganche también
       const inputEnganche = document.getElementById('enganche-'+id);
       enganche = inputEnganche ? inputEnganche.value.trim() : '';
@@ -8959,28 +8847,10 @@ function enviarWhatsAppPersonalizado(id){
         if(inputEnganche) inputEnganche.focus();
         return;
       }
-      // Capturar campos avanzados (opcionales)
-      equipo = document.getElementById('equipo-'+id)?.value || '';
-      tipoProducto = document.getElementById('tipoprod-'+id)?.value || '';
-      modelo = document.getElementById('modelo-'+id)?.value || '';
+      // Producto elegido (opcional: si falta, se quitan las líneas con [producto])
+      producto = _prProductoElegido(id);
     }
-    mensaje = construirMensajePred(mensajesMasivosCat, c, tipoPR, linea, enganche, {equipo, tipoProducto, modelo});
-  } else if(_envioSubtipoActual==='financing'||_envioSubtipoActual==='creditos'){
-    const inputLinea = document.getElementById('linea-'+id);
-    const inputEnganche = document.getElementById('enganche-'+id);
-    const linea = inputLinea ? inputLinea.value.trim() : '';
-    const enganche = inputEnganche ? inputEnganche.value.trim() : '';
-    if(!linea || parseFloat(linea)<=0){
-      showToast('Captura la línea de crédito',true);
-      if(inputLinea) inputLinea.focus();
-      return;
-    }
-    if(!enganche || parseFloat(enganche)<=0){
-      showToast('Captura el enganche',true);
-      if(inputEnganche) inputEnganche.focus();
-      return;
-    }
-    mensaje = construirMensajePred(mensajesMasivosCat, c, _envioSubtipoActual, linea, enganche);
+    mensaje = construirMensajePred(mensajesMasivosCat, c, 'pr', linea, enganche, {producto});
   } else if(esPorFinalizar){
     // Por finalizar: usa cuerpoMacro con [macropesos] del cliente y [linea de crédito] manual
     const inputLinea = document.getElementById('linea-'+id);
@@ -9016,7 +8886,7 @@ function confirmarMarcarPersonalizado(id){
   if(!c)return;
   quickConfirm(
     'Marcar como enviado',
-    `¿Marcar a <strong style="color:var(--text)">${esc(c.nombre)}</strong> como enviado? Quedará bloqueado ${_diasBloqueoCat[mensajesMasivosCat]||7} días.`,
+    `¿Marcar a <strong style="color:var(--text)">${esc(c.nombre)}</strong> como enviado? Quedará bloqueado ${_diasBloqueo(mensajesMasivosCat)} días.`,
     '✓ Marcar',
     null,
     ()=>{
@@ -9096,7 +8966,7 @@ function confirmarMarcarSeleccionados(){
   }
   quickConfirm(
     '✓ Marcar como enviados',
-    `¿Confirmar envío a los <strong style="color:var(--text)">${seleccionados.length} contacto${seleccionados.length===1?'':'s'}</strong> seleccionado${seleccionados.length===1?'':'s'}? Quedarán bloqueados ${_diasBloqueoCat[mensajesMasivosCat]||7} días.`,
+    `¿Confirmar envío a los <strong style="color:var(--text)">${seleccionados.length} contacto${seleccionados.length===1?'':'s'}</strong> seleccionado${seleccionados.length===1?'':'s'}? Quedarán bloqueados ${_diasBloqueo(mensajesMasivosCat)} días.`,
     `✓ Marcar ${seleccionados.length}`,
     null,
     ()=>{
@@ -9157,7 +9027,7 @@ function verEnviadosRecientes(){
     const btnTodos=bloqueados.length>1?`<button class="btn-outline-sm" style="width:100%;justify-content:center;margin-bottom:12px;color:var(--warn);border-color:var(--warn)" onclick="confirmarDesmarcarTodos()">↩ Desmarcar todos (${bloqueados.length})</button>`:'';
     el.innerHTML=btnTodos+bloqueados.map(c=>{
       const dias=Math.floor((ahora-_ultimoEnvioGlobal(c))/(24*60*60*1000));
-      const restantes=(_diasBloqueoCat[mensajesMasivosCat]||7)-dias;
+      const restantes=_diasBloqueo(mensajesMasivosCat)-dias;
       return`<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px">
         <div style="flex:1;min-width:0">
           <div style="font-weight:500;font-size:13px;color:var(--text)">${esc(c.nombre)}</div>
@@ -9275,7 +9145,7 @@ function marcarEnviadoIndividual(id){
   if(!c)return;
   quickConfirm(
     'Marcar como enviado',
-    `¿Confirmar envío a <strong style="color:var(--text)">${esc(c.nombre)}</strong>? Quedará bloqueado ${_diasBloqueoCat[mensajesMasivosCat]||7} días.`,
+    `¿Confirmar envío a <strong style="color:var(--text)">${esc(c.nombre)}</strong>? Quedará bloqueado ${_diasBloqueo(mensajesMasivosCat)} días.`,
     '✓ Marcar',
     null,
     ()=>{
