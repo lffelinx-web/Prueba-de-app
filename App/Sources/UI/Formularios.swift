@@ -482,10 +482,6 @@ struct FormularioPR: View {
                     CampoFolio(titulo: "N° PR", prefijo: "PR", texto: $d.numPR)
                     SelectorAsesor(vacio: "Seleccionar", asignado: store.cliente(clienteId)?.asesor, asesor: $d.asesor)
                     CampoFecha(titulo: "Fecha de solicitud", texto: $d.fechaSolicitud)
-                    Picker("Tipo", selection: $d.tipocred) {
-                        Text("Seleccionar").tag("")
-                        ForEach(Catalogos.tiposPR, id: \.self) { Text($0).tag($0) }
-                    }
                 }
                 Section("Detalles") {
                     TextField("Detalles de la PR", text: $d.detalles, axis: .vertical)
@@ -576,7 +572,6 @@ struct FormularioPR: View {
         d.numPR = c.numPR ?? "PR"
         d.asesor = c.asesor ?? ""
         d.fechaSolicitud = c.fechaSolicitud ?? ""
-        d.tipocred = c.tipocred ?? ""
         d.detalles = c.detallesPR ?? ""
     }
 }

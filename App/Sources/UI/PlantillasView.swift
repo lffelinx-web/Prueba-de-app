@@ -175,7 +175,7 @@ struct EditorMensajeView: View {
         switch categoria {
         case .sinrenovar: return [(.promociones, "Promociones"), (.macropesos, "Macropesos"), (.linea, "Línea")]
         case .porfinalizar: return [(.promociones, "Promociones"), (.porfinalizar, "Promociones extra")]
-        case .prAprobadas: return [(.promociones, "Promociones"), (.financing, "Financing"), (.creditos, "Créditos")]
+        case .prAprobadas: return [(.promociones, "Promociones"), (.pr, "PR aprobada")]
         default: return []
         }
     }
@@ -203,22 +203,17 @@ struct EditorMensajeView: View {
                 }
                 .seccionTema()
             case .prAprobadas:
-                Section("Financing") {
-                    CampoPlantilla(titulo: "Cuerpo del mensaje (Financing)", ejemplo: "Ej. Tu Financing por [linea de crédito]", texto: $mensaje.cuerpoFinancing, marcadores: ["[linea de crédito]"])
-                    Toggle("Opciones avanzadas", isOn: $mensaje.advFinancing)
-                    if mensaje.advFinancing {
-                        CampoPlantilla(titulo: "Financing — avanzado", ejemplo: "Ej. Tu Financing por [linea de crédito] con enganche de [enganche] para tu [equipo]",
-                                       texto: $mensaje.cuerpoFinancingAdv, marcadores: ["[linea de crédito]", "[enganche]", "[equipo]"])
+                Section {
+                    CampoPlantilla(titulo: "Cuerpo del mensaje (PR aprobada)", ejemplo: "Ej. Tu solicitud fue aprobada por [linea de crédito]", texto: $mensaje.cuerpoPR, marcadores: ["[linea de crédito]"])
+                    Toggle("Opciones avanzadas", isOn: $mensaje.advPR)
+                    if mensaje.advPR {
+                        CampoPlantilla(titulo: "PR aprobada — avanzado", ejemplo: "Ej. Tu crédito por [linea de crédito] con enganche de [enganche] para tu [producto]",
+                                       texto: $mensaje.cuerpoPRAdv, marcadores: ["[linea de crédito]", "[enganche]", "[producto]"])
                     }
-                }
-                .seccionTema()
-                Section("Créditos") {
-                    CampoPlantilla(titulo: "Cuerpo del mensaje (Créditos)", ejemplo: "Ej. Tu crédito por [linea de crédito]", texto: $mensaje.cuerpoCreditos, marcadores: ["[linea de crédito]"])
-                    Toggle("Opciones avanzadas", isOn: $mensaje.advCreditos)
-                    if mensaje.advCreditos {
-                        CampoPlantilla(titulo: "Créditos — avanzado", ejemplo: "Ej. Tu crédito por [linea de crédito] con enganche de [enganche] para tu [tipo de producto] [modelo]",
-                                       texto: $mensaje.cuerpoCreditosAdv, marcadores: ["[linea de crédito]", "[enganche]", "[tipo de producto]", "[modelo]"])
-                    }
+                } header: {
+                    Text("PR aprobada")
+                } footer: {
+                    Text("Con opciones avanzadas, al enviar se captura línea, enganche y el producto del catálogo. [producto] se escribe completo, por ejemplo \"Celular Samsung Galaxy A15\".")
                 }
                 .seccionTema()
             default:
@@ -233,7 +228,7 @@ struct EditorMensajeView: View {
                     .pickerStyle(.segmented)
                 }
                 VistaPrevia(mensaje: Mensajes.predeterminado(mensaje, cliente: clienteEjemplo, cuerpo: vista, extras: ExtrasMensaje(
-                    lineaCredito: "10000", enganche: "2000", equipo: "Apple iPhone 15", tipoProducto: "iPhone", modelo: "iPhone 15 Pro")))
+                    lineaCredito: "10000", enganche: "2000", producto: "Celular Samsung Galaxy A15")))
             }
             .listRowBackground(Color.clear)
             if !error.isEmpty {
@@ -248,7 +243,7 @@ struct EditorMensajeView: View {
                 Button("Guardar") {
                     var limpio = mensaje
                     let rutas: [WritableKeyPath<MensajePredeterminado, String>] = [
-                        \.saludo, \.lugar, \.cuerpo, \.cuerpoMacro, \.cuerpoLinea, \.cuerpoFinancing, \.cuerpoCreditos, \.cuerpoFinancingAdv, \.cuerpoCreditosAdv,
+                        \.saludo, \.lugar, \.cuerpo, \.cuerpoMacro, \.cuerpoLinea, \.cuerpoPR, \.cuerpoPRAdv,
                     ]
                     for ruta in rutas {
                         limpio[keyPath: ruta] = Texto.limpioConEspacios(limpio[keyPath: ruta])

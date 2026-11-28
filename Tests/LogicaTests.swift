@@ -137,7 +137,7 @@ final class ReglasTests: XCTestCase {
         XCTAssertEqual(avisos.first?.tipo, "vencido_a_sinrenovar")
     }
 
-    func testDobleFinanciamientoVencidoSeArchiva() {
+    func testDobleFinanciamientoVencidoEsperaConfirmacion() {
         let viejo = Cliente(raw: [
             "id": "viejo", "nombre": "Rosa", "categoria": "activos", "dobleFinId": "nuevo",
             "fechaCompra": .string(Fecha.iso(Fecha.sumar(dias: -100, a: Fecha.hoy))), "semanas": "13",
@@ -147,10 +147,15 @@ final class ReglasTests: XCTestCase {
             "fechaCompra": .string(Fecha.iso(Fecha.sumar(dias: -10, a: Fecha.hoy))), "semanas": "13",
         ])
         let (clientes, avisos) = Reglas.mantenimiento([viejo, nuevo])
-        XCTAssertEqual(clientes.map(\.id), ["nuevo"])
-        XCTAssertNil(clientes.first?.dobleFinId)
-        XCTAssertEqual(clientes.first?.historial.count, 1)
-        XCTAssertTrue(avisos.isEmpty)
+        XCTAssertEqual(clientes.map(\.id), ["viejo", "nuevo"])
+        XCTAssertEqual(avisos.map(\.tipo), ["vencido_a_sinrenovar"])
+        XCTAssertEqual(avisos.first?.datos["clienteId"]?.text, "viejo")
+
+        // Confirming archives it into the other credit.
+        var lista = clientes
+        XCTAssertTrue(Reglas.archivarEnCreditoVinculado(viejo, en: &lista))
+        XCTAssertEqual(lista.map(\.id), ["nuevo"])
+        XCTAssertEqual(lista.first?.historial.count, 1)
     }
 
     func testReferenciasSincronizadas() {
@@ -204,14 +209,36 @@ final class MensajesTests: XCTestCase {
         XCTAssertEqual(texto, "*Ana Ruiz*\n\nPromoción especial")
     }
 
-    func testArticuloSegunProducto() {
+    func testPRAvanzadaConProducto() {
         var plantilla = MensajePredeterminado()
-        plantilla.advCreditos = true
-        plantilla.cuerpoCreditosAdv = "Llévate el [tipo de producto] [modelo] con [enganche]"
+        plantilla.cuerpoPR = "Tu solicitud fue aprobada por [linea de crédito]"
+        plantilla.advPR = true
+        plantilla.cuerpoPRAdv = "Llévate tu [producto] con [enganche]\nLínea: [linea de crédito]"
         let cliente = Cliente(raw: ["id": "1", "nombre": "Ana Ruiz"])
-        let extras = ExtrasMensaje(lineaCredito: "8000", enganche: "1500", tipoProducto: "Pantallas", modelo: "TV 50")
-        let texto = Mensajes.predeterminado(plantilla, cliente: cliente, cuerpo: .creditos, extras: extras)
-        XCTAssertTrue(texto.hasSuffix("Llévate la pantalla TV 50 con $1,500.00"), texto)
+        let producto = Catalogo.descripcion(categoria: "Celulares", marca: "Samsung", modelo: "Galaxy A15")
+        XCTAssertEqual(producto, "Celular Samsung Galaxy A15")
+        let extras = ExtrasMensaje(lineaCredito: "8000", enganche: "1500", producto: producto)
+        let texto = Mensajes.predeterminado(plantilla, cliente: cliente, cuerpo: .pr, extras: extras)
+        XCTAssertTrue(texto.hasSuffix("Llévate tu Celular Samsung Galaxy A15 con $1,500.00\nLínea: $8,000.00"), texto)
+
+        plantilla.advPR = false
+        XCTAssertTrue(Mensajes.predeterminado(plantilla, cliente: cliente, cuerpo: .pr, extras: extras).hasSuffix("aprobada por $8,000.00"))
+    }
+
+    func testCatalogoConMarcas() {
+        let datos = Catalogo.leer(.object([
+            "iPhone": .array(["iPhone 15"]),
+            "Celulares": .object(["Samsung": .array(["Galaxy A15", "Galaxy A25"])]),
+            "Pantallas": .array(["TV vieja"]),
+            "Accesorios": .array([.object(["nombre": "Audífonos", "precio": 500])]),
+        ]))
+        XCTAssertEqual(datos.marcas["Celulares"], ["Samsung": ["Galaxy A15", "Galaxy A25"]])
+        XCTAssertEqual(datos.marcas["Pantallas"], [:])
+        XCTAssertEqual(datos.planos["iPhone"]?.count, 1)
+        XCTAssertEqual(datos.planos["Motos"]?.count, 0)
+        XCTAssertEqual(Catalogo.descripcion(categoria: "iPhone", modelo: "iPhone 15 Pro"), "iPhone 15 Pro")
+        XCTAssertEqual(Catalogo.descripcion(categoria: "Motos", modelo: "Italika FT150"), "Moto Italika FT150")
+        XCTAssertEqual(Catalogo.descripcion(categoria: "Accesorios", modelo: "Audífonos"), "Audífonos")
     }
 }
 

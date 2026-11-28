@@ -295,72 +295,111 @@ private struct FormularioNombre: View {
 
 struct CatalogosView: View {
     @EnvironmentObject private var store: Store
-    @State private var nuevaMarca = false
-    @State private var confirmacion: Confirmacion?
 
-    private static let iconos = ["iPhone": "iphone", "Pantallas": "tv", "Bicis": "bicycle", "Motos": "scooter", "Accesorios": "headphones"]
+    static let iconos = ["iPhone": "iphone", "Celulares": "iphone.gen3", "Pantallas": "tv", "Bicis": "bicycle", "Motos": "scooter", "Accesorios": "headphones"]
+
+    private func total(_ categoria: String) -> Int {
+        if Catalogo.conMarca.contains(categoria) { return store.catalogoMarcas[categoria]?.values.reduce(0) { $0 + $1.count } ?? 0 }
+        return store.catalogoProductos[categoria]?.count ?? 0
+    }
 
     var body: some View {
         List {
             Section {
-                ForEach(Store.categoriasProducto, id: \.self) { categoria in
+                ForEach(Catalogo.categorias, id: \.self) { categoria in
                     NavigationLink {
-                        ModelosProductoView(categoria: categoria)
+                        if Catalogo.conMarca.contains(categoria) {
+                            MarcasView(categoria: categoria)
+                        } else {
+                            ModelosProductoView(categoria: categoria)
+                        }
                     } label: {
                         HStack(spacing: 12) {
                             IconoCuadro(sistema: CatalogosView.iconos[categoria] ?? "shippingbox", color: Tema.Seccion.azul, lado: 32)
-                            Text(categoria).font(.system(size: 15, weight: .semibold))
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(categoria).font(.system(size: 15, weight: .semibold))
+                                if Catalogo.conMarca.contains(categoria) {
+                                    let marcas = store.marcas(de: categoria).count
+                                    Text("\(marcas) marca\(marcas == 1 ? "" : "s")").font(Tipo.detalle).foregroundStyle(Tema.apagado)
+                                }
+                            }
                             Spacer()
-                            Text("\(store.catalogoProductos[categoria]?.count ?? 0)").foregroundStyle(Tema.apagado)
+                            Text("\(total(categoria))").foregroundStyle(Tema.apagado)
                         }
                     }
                 }
             } header: {
                 Text("Productos")
             } footer: {
-                Text("Se usan en los mensajes de PR (tipo de producto y modelo). Los accesorios llevan precio para el recordatorio de macropesos.")
-            }
-            .seccionTema()
-
-            Section {
-                let marcas = store.catalogoCelulares.keys.sorted()
-                if marcas.isEmpty { Text("Sin marcas registradas").foregroundStyle(Tema.apagado) }
-                ForEach(marcas, id: \.self) { marca in
-                    NavigationLink {
-                        ModelosCelularView(marca: marca)
-                    } label: {
-                        HStack(spacing: 12) {
-                            IconoCuadro(sistema: "iphone.gen3", color: Tema.Seccion.morado, lado: 32)
-                            Text(marca).font(.system(size: 15, weight: .semibold))
-                            Spacer()
-                            Text("\(store.catalogoCelulares[marca]?.count ?? 0)").foregroundStyle(Tema.apagado)
-                        }
-                    }
-                    .swipeActions {
-                        Button("Eliminar", role: .destructive) {
-                            confirmacion = Confirmacion(titulo: "Eliminar marca", mensaje: "¿Eliminar \(marca) y todos sus modelos?", boton: "Eliminar", destructivo: true) {
-                                do { try await store.eliminarMarca(marca); store.avisar("✓ Marca eliminada") } catch { store.avisar("Error al eliminar", advertencia: true) }
-                            }
-                        }
-                    }
-                }
-                Button { nuevaMarca = true } label: { Label("Agregar marca", systemImage: "plus") }
-            } header: {
-                Text("Celulares")
-            } footer: {
-                Text("Se usan como equipo en los mensajes de Financing.")
+                Text("Se usan en los mensajes de PR aprobadas ([producto]). Celulares y pantallas se ordenan por marca. Los accesorios llevan precio para el recordatorio de macropesos.")
             }
             .seccionTema()
         }
         .fondoTema()
         .navigationTitle("Catálogos")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $nuevaMarca) {
+    }
+}
+
+/// Brands of Celulares or Pantallas.
+private struct MarcasView: View {
+    @EnvironmentObject private var store: Store
+    let categoria: String
+    @State private var nuevaMarca = false
+    @State private var abierta: MarcaAbierta?
+    @State private var pendiente: MarcaAbierta?
+    @State private var confirmacion: Confirmacion?
+
+    struct MarcaAbierta: Identifiable, Hashable {
+        let nombre: String
+        var id: String { nombre }
+    }
+
+    var body: some View {
+        let marcas = store.marcas(de: categoria)
+        List {
+            Section {
+                if marcas.isEmpty { Text("Sin marcas registradas").foregroundStyle(Tema.apagado) }
+                ForEach(marcas, id: \.self) { marca in
+                    Button { abierta = MarcaAbierta(nombre: marca) } label: {
+                        HStack {
+                            Text(marca).font(.system(size: 15, weight: .semibold)).foregroundStyle(Tema.texto)
+                            Spacer()
+                            Text("\(store.modelos(de: categoria, marca: marca).count)").foregroundStyle(Tema.apagado)
+                            Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Tema.apagado)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .swipeActions {
+                        Button("Eliminar", role: .destructive) {
+                            confirmacion = Confirmacion(titulo: "Eliminar marca", mensaje: "¿Eliminar \(marca) y todos sus modelos?", boton: "Eliminar", destructivo: true) {
+                                do { try await store.eliminarMarca(marca, categoria: categoria); store.avisar("✓ Marca eliminada") } catch { store.avisar("Error al eliminar", advertencia: true) }
+                            }
+                        }
+                    }
+                }
+                Button { nuevaMarca = true } label: { Label("Agregar marca", systemImage: "plus") }
+            } footer: {
+                Text("Una marca se guarda al agregarle su primer modelo.")
+            }
+            .seccionTema()
+        }
+        .fondoTema()
+        .navigationTitle(categoria)
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(item: $abierta) { marca in
+            ModelosMarcaView(categoria: categoria, marca: marca.nombre)
+        }
+        .sheet(isPresented: $nuevaMarca, onDismiss: {
+            if let pendiente { abierta = pendiente }
+            pendiente = nil
+        }) {
             FormularioNombre(titulo: "Nueva marca", etiqueta: "Marca", inicial: "") { marca in
                 guard !marca.isEmpty else { throw ErrorAdmin("Escribe una marca.") }
-                guard store.catalogoCelulares[marca] == nil else { throw ErrorAdmin("Esa marca ya existe.") }
-                try await store.guardarModelosCelular(marca: marca, modelos: [])
-                store.avisar("✓ Marca agregada")
+                guard marca.rangeOfCharacter(from: CharacterSet(charactersIn: ".#$[]/")) == nil else { throw ErrorAdmin("La marca no puede llevar . # $ [ ] /") }
+                guard !marcas.contains(where: { $0.lowercased() == marca.lowercased() }) else { throw ErrorAdmin("Esa marca ya existe.") }
+                pendiente = MarcaAbierta(nombre: marca)
             }
             .capaDeEstado()
         }
@@ -368,13 +407,14 @@ struct CatalogosView: View {
     }
 }
 
-private struct ModelosCelularView: View {
+private struct ModelosMarcaView: View {
     @EnvironmentObject private var store: Store
+    let categoria: String
     let marca: String
     @State private var nuevo = false
 
     var body: some View {
-        let modelos = store.catalogoCelulares[marca] ?? []
+        let modelos = store.modelos(de: categoria, marca: marca)
         List {
             Section {
                 if modelos.isEmpty { Text("Sin modelos").foregroundStyle(Tema.apagado) }
@@ -384,11 +424,13 @@ private struct ModelosCelularView: View {
                             Button("Eliminar", role: .destructive) {
                                 var lista = modelos
                                 lista.remove(at: i)
-                                Task { try? await store.guardarModelosCelular(marca: marca, modelos: lista) }
+                                Task { try? await store.guardarModelosMarca(categoria: categoria, marca: marca, modelos: lista) }
                             }
                         }
                 }
                 Button { nuevo = true } label: { Label("Agregar modelo", systemImage: "plus") }
+            } footer: {
+                Text("En el mensaje se verá como \"\(Catalogo.descripcion(categoria: categoria, marca: marca, modelo: modelos.first ?? "Modelo"))\".")
             }
             .seccionTema()
         }
@@ -398,8 +440,8 @@ private struct ModelosCelularView: View {
         .sheet(isPresented: $nuevo) {
             FormularioNombre(titulo: "Nuevo modelo", etiqueta: "Modelo", inicial: "") { modelo in
                 guard !modelo.isEmpty else { throw ErrorAdmin("Escribe un modelo.") }
-                guard !modelos.contains(modelo) else { throw ErrorAdmin("Ese modelo ya existe.") }
-                try await store.guardarModelosCelular(marca: marca, modelos: modelos + [modelo])
+                guard !modelos.contains(where: { $0.lowercased() == modelo.lowercased() }) else { throw ErrorAdmin("Ese modelo ya existe.") }
+                try await store.guardarModelosMarca(categoria: categoria, marca: marca, modelos: modelos + [modelo])
                 store.avisar("✓ Modelo agregado")
             }
             .capaDeEstado()

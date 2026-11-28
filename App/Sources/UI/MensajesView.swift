@@ -86,7 +86,7 @@ struct ListaEnvioView: View {
     @State private var lineaAvanzada = false
     @State private var lineas: [String: String] = [:]
     @State private var enganches: [String: String] = [:]
-    @State private var equipos: [String: String] = [:]
+    @State private var marcas: [String: String] = [:]
     @State private var tiposProducto: [String: String] = [:]
     @State private var modelos: [String: String] = [:]
     @State private var confirmacion: Confirmacion?
@@ -386,14 +386,14 @@ struct ListaEnvioView: View {
 
     private func cuerpoPara(_ c: Cliente) -> CuerpoMensaje {
         switch categoria {
-        case .prAprobadas: return (c.tipocred ?? "").lowercased() == "financing" ? .financing : .creditos
+        case .prAprobadas: return .pr
         case .porfinalizar: return .porfinalizar
         default: return cuerpoEnvio
         }
     }
 
     private func avanzadasPR(_ c: Cliente, _ plantilla: MensajePredeterminado?) -> Bool {
-        cuerpoPara(c) == .financing ? plantilla?.advFinancing == true : plantilla?.advCreditos == true
+        plantilla?.advPR == true
     }
 
     /// One contact of a personalized list: who (with copyable folio and phone), the data the
@@ -463,9 +463,7 @@ struct ListaEnvioView: View {
             }
         case .linea:
             EmptyView()
-        case .financing, .creditos:
-            Etiqueta(tipo == .financing ? "Financing" : "Créditos", color: tipo == .financing ? Tema.Seccion.azul : Tema.Seccion.morado)
-        case .promociones:
+        case .pr, .promociones:
             EmptyView()
         }
     }
@@ -510,41 +508,58 @@ struct ListaEnvioView: View {
                     .frame(height: 40)
                 }
             }
-        } else if tipo == .porfinalizar || ((tipo == .financing || tipo == .creditos) && !avanzadasPR(c, plantilla)) {
+        } else if tipo == .porfinalizar || (tipo == .pr && !avanzadasPR(c, plantilla)) {
             campoMonto("Línea de crédito", $lineas, c.id)
-        } else if tipo == .financing || tipo == .creditos {
+        } else if tipo == .pr {
             HStack(spacing: 8) {
                 campoMonto("Línea", $lineas, c.id)
                 campoMonto("Enganche", $enganches, c.id)
             }
-            if tipo == .financing {
-                Picker("Equipo", selection: Binding(get: { equipos[c.id] ?? "" }, set: { equipos[c.id] = $0 })) {
-                    Text("Elegir equipo").tag("")
-                    ForEach(store.catalogoCelulares.keys.sorted(), id: \.self) { marca in
-                        Section(marca) {
-                            ForEach(store.catalogoCelulares[marca] ?? [], id: \.self) { modelo in
-                                Text(modelo).tag(marca + " " + modelo)
-                            }
-                        }
+            selectorProducto(c)
+        }
+    }
+
+    /// Category → (brand) → model, from the catalogue.
+    private func selectorProducto(_ c: Cliente) -> some View {
+        let categoria = tiposProducto[c.id] ?? ""
+        let conMarca = Catalogo.conMarca.contains(categoria)
+        let marca = marcas[c.id] ?? ""
+        return VStack(alignment: .leading, spacing: 4) {
+            Text("PRODUCTO").font(.system(size: 10, weight: .semibold)).tracking(0.5).foregroundStyle(Tema.apagado)
+            HStack(spacing: 6) {
+                Picker("Categoría", selection: Binding(get: { categoria }, set: { tiposProducto[c.id] = $0; marcas[c.id] = ""; modelos[c.id] = "" })) {
+                    Text("Categoría").tag("")
+                    ForEach(Catalogo.categorias, id: \.self) { Text($0).tag($0) }
+                }
+                if conMarca {
+                    Picker("Marca", selection: Binding(get: { marca }, set: { marcas[c.id] = $0; modelos[c.id] = "" })) {
+                        Text("Marca").tag("")
+                        ForEach(store.marcas(de: categoria), id: \.self) { Text($0).tag($0) }
                     }
                 }
-                .pickerStyle(.menu)
-                .font(Tipo.dato)
-            } else {
-                HStack {
-                    Picker("Tipo prod.", selection: Binding(get: { tiposProducto[c.id] ?? "" }, set: { tiposProducto[c.id] = $0; modelos[c.id] = "" })) {
-                        Text("Tipo de producto").tag("")
-                        ForEach(Store.categoriasProducto, id: \.self) { Text($0).tag($0) }
-                    }
+                if !categoria.isEmpty, !conMarca || !marca.isEmpty {
                     Picker("Modelo", selection: Binding(get: { modelos[c.id] ?? "" }, set: { modelos[c.id] = $0 })) {
                         Text("Modelo").tag("")
-                        ForEach(store.modelos(de: tiposProducto[c.id] ?? ""), id: \.self) { Text($0).tag($0) }
+                        ForEach(store.modelos(de: categoria, marca: marca), id: \.self) { Text($0).tag($0) }
                     }
                 }
-                .pickerStyle(.menu)
-                .font(Tipo.dato)
+            }
+            .pickerStyle(.menu)
+            .font(Tipo.dato)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 4)
+            .background(Tema.superficie2.opacity(0.7), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Tema.borde, lineWidth: 1))
+            if let producto = productoElegido(c) {
+                Text(producto).font(Tipo.detalle.weight(.semibold)).foregroundStyle(Tema.acento)
             }
         }
+    }
+
+    private func productoElegido(_ c: Cliente) -> String? {
+        let categoria = tiposProducto[c.id] ?? "", modelo = modelos[c.id] ?? ""
+        guard !categoria.isEmpty, !modelo.isEmpty else { return nil }
+        return Catalogo.descripcion(categoria: categoria, marca: Catalogo.conMarca.contains(categoria) ? marcas[c.id] ?? "" : "", modelo: modelo)
     }
 
     private func guardarLinea(_ c: Cliente) {
@@ -594,15 +609,13 @@ struct ListaEnvioView: View {
         case .porfinalizar:
             guard let linea = monto(lineas, c.id) else { return store.avisar("Captura la línea de crédito", advertencia: true) }
             extras.lineaCredito = linea
-        case .financing, .creditos:
+        case .pr:
             guard let linea = monto(lineas, c.id) else { return store.avisar("Captura la línea de crédito", advertencia: true) }
             extras.lineaCredito = linea
             if avanzadasPR(c, plantilla) {
                 guard let enganche = monto(enganches, c.id) else { return store.avisar("Captura el enganche", advertencia: true) }
                 extras.enganche = enganche
-                extras.equipo = equipos[c.id] ?? ""
-                extras.tipoProducto = tiposProducto[c.id] ?? ""
-                extras.modelo = modelos[c.id] ?? ""
+                extras.producto = productoElegido(c) ?? ""
             }
         case .macropesos, .promociones:
             break

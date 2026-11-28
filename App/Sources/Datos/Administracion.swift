@@ -158,14 +158,22 @@ extension Store {
 
     // MARK: - Catalogues
 
-    func guardarModelosCelular(marca: String, modelos: [String]) async throws {
+    /// Celulares and Pantallas: `ca_catalogo_productos/<categoria>/<marca>`.
+    func guardarModelosMarca(categoria: String, marca: String, modelos: [String]) async throws {
         guard esAdmin else { throw ErrorAdmin("Solo administradores.") }
-        try await escribir(raiz.child("ca_catalogo_celulares").child(marca), modelos)
+        guard Catalogo.conMarca.contains(categoria) else { throw ErrorAdmin("Categoría sin marcas.") }
+        let nodo = raiz.child("ca_catalogo_productos").child(categoria)
+        // A flat list left from before brands is replaced by the brand map.
+        if catalogoMarcas[categoria]?.isEmpty ?? true {
+            try await escribir(nodo, [marca: modelos])
+        } else {
+            try await escribir(nodo.child(marca), modelos.isEmpty ? nil : modelos)
+        }
     }
 
-    func eliminarMarca(_ marca: String) async throws {
+    func eliminarMarca(_ marca: String, categoria: String) async throws {
         guard esAdmin else { throw ErrorAdmin("Solo administradores.") }
-        try await escribir(raiz.child("ca_catalogo_celulares").child(marca), nil)
+        try await escribir(raiz.child("ca_catalogo_productos").child(categoria).child(marca), nil)
     }
 
     /// Accessories are stored as `{nombre, precio}`; the other categories as plain names.

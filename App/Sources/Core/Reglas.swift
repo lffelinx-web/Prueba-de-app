@@ -32,6 +32,11 @@ enum Reglas {
         ])
     }
 
+    static func tieneCreditoVinculadoActivo(_ c: Cliente, en clientes: [Cliente]) -> Bool {
+        guard let otroId = c.dobleFinId else { return false }
+        return clientes.contains { $0.id == otroId && $0.categoria == .activos }
+    }
+
     /// Moves `c` into the history of its still-active linked credit. Returns false if there is none.
     static func archivarEnCreditoVinculado(_ c: Cliente, en clientes: inout [Cliente]) -> Bool {
         guard let otroId = c.dobleFinId,
@@ -78,17 +83,19 @@ enum Reglas {
             _ = archivarEnCreditoVinculado(c, en: &clientes)
         }
 
-        // Finished credits: archive double financing, otherwise ask for confirmation.
+        // Finished credits always wait for a manual confirmation, double financing included.
         for c in clientes where c.categoria == .activos {
             guard let fin = c.fechaFin, Date() >= Fecha.calendario.date(bySettingHour: 12, minute: 0, second: 0, of: fin) ?? fin else { continue }
-            if archivarEnCreditoVinculado(c, en: &clientes) { continue }
             if c.estatus == .atraso { continue }
+            let doble = tieneCreditoVinculadoActivo(c, en: clientes)
             avisos.append(NotificacionNueva(tipo: "vencido_a_sinrenovar", datos: [
                 "clienteId": .string(c.id),
                 "nombre": .string(c.nombre),
                 "sl": .string(c.sl ?? ""),
                 "fechaFin": .string(Fecha.iso(fin)),
-                "mensaje": .string("El crédito de \(c.nombre) (\(c.sl ?? "sin SL")) ya finalizó. ¿Confirmas que pasa a Sin renovar?"),
+                "mensaje": .string(doble
+                    ? "El crédito \(c.sl ?? "sin SL") de \(c.nombre) ya finalizó (tiene doble financiamiento). ¿Confirmas que pasa al historial de su otro crédito?"
+                    : "El crédito de \(c.nombre) (\(c.sl ?? "sin SL")) ya finalizó. ¿Confirmas que pasa a Sin renovar?"),
             ]))
         }
 
@@ -281,14 +288,13 @@ struct Filtros: Equatable {
     var tipoProspecto = "" // pr-aprobada / normal
     var verificado = ""    // si / no
     var whatsapp = ""      // si / no
-    var tipocred = ""      // Financing / Créditos
     var fechaDesde: Date?
     var fechaHasta: Date?
 
     static let filtrables: Set<Categoria> = [.activos, .sinrenovar, .prospectos, .prAprobadas]
 
     var cantidad: Int {
-        let textos = [asesor, tipo, plazo, estatus, macroMin, macroMax, tipoProspecto, verificado, whatsapp, tipocred]
+        let textos = [asesor, tipo, plazo, estatus, macroMin, macroMax, tipoProspecto, verificado, whatsapp]
         let fechas = [compraDesde, compraHasta, venceDesde, venceHasta, fechaDesde, fechaHasta]
         return textos.filter { !$0.isEmpty }.count + fechas.compactMap { $0 }.count
     }
@@ -308,7 +314,6 @@ struct Filtros: Equatable {
             if !whatsapp.isEmpty, (whatsapp == "si") != c.tieneWA { return false }
             return true
         case .prAprobadas:
-            if !tipocred.isEmpty, (c.tipocred ?? "") != tipocred { return false }
             if let desde = iso(fechaDesde), (c.fechaSolicitud ?? "") < desde { return false }
             if let hasta = iso(fechaHasta), (c.fechaSolicitud ?? "") > hasta { return false }
             return true
@@ -334,5 +339,4 @@ struct Filtros: Equatable {
 enum Catalogos {
     static let plazos = ["6", "9", "13", "26", "36", "39", "52", "78", "104", "125"]
     static let tiposCredito = ["Compra", "Préstamo"]
-    static let tiposPR = ["Financing", "Créditos"]
 }

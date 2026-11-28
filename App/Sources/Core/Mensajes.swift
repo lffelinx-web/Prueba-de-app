@@ -140,12 +140,10 @@ struct MensajePredeterminado: Equatable {
     var cuerpo = ""
     var cuerpoMacro = ""
     var cuerpoLinea = ""
-    var cuerpoFinancing = ""
-    var cuerpoCreditos = ""
-    var cuerpoFinancingAdv = ""
-    var cuerpoCreditosAdv = ""
-    var advFinancing = false
-    var advCreditos = false
+    /// PR aprobadas: one basic body and an optional advanced one (line, down payment, product).
+    var cuerpoPR = ""
+    var cuerpoPRAdv = ""
+    var advPR = false
 
     init() {}
 
@@ -155,16 +153,13 @@ struct MensajePredeterminado: Equatable {
         cuerpo = json?["cuerpo"]?.text ?? ""
         cuerpoMacro = json?["cuerpoMacro"]?.text ?? ""
         cuerpoLinea = json?["cuerpoLinea"]?.text ?? ""
-        cuerpoFinancing = json?["cuerpoFinancing"]?.text ?? ""
-        cuerpoCreditos = json?["cuerpoCreditos"]?.text ?? ""
-        cuerpoFinancingAdv = json?["cuerpoFinancingAdv"]?.text ?? ""
-        cuerpoCreditosAdv = json?["cuerpoCreditosAdv"]?.text ?? ""
-        advFinancing = json?["advFinancing"]?.truthy ?? false
-        advCreditos = json?["advCreditos"]?.truthy ?? false
+        cuerpoPR = json?["cuerpoPR"]?.text ?? ""
+        cuerpoPRAdv = json?["cuerpoPRAdv"]?.text ?? ""
+        advPR = json?["advPR"]?.truthy ?? false
     }
 
     var tieneContenido: Bool {
-        [saludo, lugar, cuerpo, cuerpoMacro, cuerpoLinea, cuerpoFinancing, cuerpoCreditos, cuerpoFinancingAdv, cuerpoCreditosAdv]
+        [saludo, lugar, cuerpo, cuerpoMacro, cuerpoLinea, cuerpoPR, cuerpoPRAdv]
             .contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
@@ -172,16 +167,14 @@ struct MensajePredeterminado: Equatable {
         .object([
             "saludo": .string(saludo), "lugar": .string(lugar), "cuerpo": .string(cuerpo),
             "cuerpoMacro": .string(cuerpoMacro), "cuerpoLinea": .string(cuerpoLinea),
-            "cuerpoFinancing": .string(cuerpoFinancing), "cuerpoCreditos": .string(cuerpoCreditos),
-            "cuerpoFinancingAdv": .string(cuerpoFinancingAdv), "cuerpoCreditosAdv": .string(cuerpoCreditosAdv),
-            "advFinancing": .bool(advFinancing), "advCreditos": .bool(advCreditos),
+            "cuerpoPR": .string(cuerpoPR), "cuerpoPRAdv": .string(cuerpoPRAdv), "advPR": .bool(advPR),
         ])
     }
 }
 
 /// Which body of a message template is added after the general one.
 enum CuerpoMensaje: String {
-    case promociones, macropesos, linea, financing, creditos, porfinalizar
+    case promociones, macropesos, linea, pr, porfinalizar
 }
 
 struct ExtrasMensaje {
@@ -190,9 +183,8 @@ struct ExtrasMensaje {
     var enganche: String?
     var accesorioNombre: String?
     var accesorioPrecio: Double?
-    var equipo = ""
-    var tipoProducto = ""
-    var modelo = ""
+    /// Full product text from the catalogue, e.g. "Celular Samsung Galaxy A15".
+    var producto = ""
 }
 
 // MARK: - Building messages
@@ -238,41 +230,32 @@ enum Mensajes {
         case .promociones: extra = ""
         case .macropesos, .porfinalizar: extra = plantilla.cuerpoMacro
         case .linea: extra = plantilla.cuerpoLinea
-        case .financing:
-            extra = plantilla.advFinancing && !plantilla.cuerpoFinancingAdv.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? plantilla.cuerpoFinancingAdv : plantilla.cuerpoFinancing
-        case .creditos:
-            extra = plantilla.advCreditos && !plantilla.cuerpoCreditosAdv.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? plantilla.cuerpoCreditosAdv : plantilla.cuerpoCreditos
+        case .pr:
+            extra = plantilla.advPR && !plantilla.cuerpoPRAdv.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? plantilla.cuerpoPRAdv : plantilla.cuerpoPR
         }
 
         let nombre = primerNombreApellido(cliente.nombre)
         let macro = cliente.macropesos ?? 0
         let linea = Dinero.texto(extras.lineaCredito.flatMap { Double($0) } ?? 0)
         let enganche = Dinero.texto(extras.enganche.flatMap { Double($0) } ?? 0)
-        let producto = Mensajes.productos[extras.tipoProducto]?.singular ?? extras.tipoProducto
 
         func preparar(_ texto: String) -> String {
             var lineas = texto.components(separatedBy: "\n")
             // Without macropesos, lines that mention them are dropped.
             if macro <= 0 { lineas = lineas.filter { !contiene($0, "[macropesos]") } }
             lineas = lineas.filter { linea in
-                if extras.equipo.isEmpty, contiene(linea, "[equipo]") { return false }
-                if extras.tipoProducto.isEmpty, contiene(linea, "[tipo de producto]") { return false }
-                if extras.modelo.isEmpty, contiene(linea, "[modelo]") { return false }
+                if extras.producto.isEmpty, contiene(linea, "[producto]") { return false }
                 if (extras.enganche ?? "").isEmpty, contiene(linea, "[enganche]") { return false }
                 return true
             }
-            let adaptado = adaptarArticulos(lineas.joined(separator: "\n"), producto: extras.tipoProducto)
-            return reemplazar(adaptado, [
+            return reemplazar(lineas.joined(separator: "\n"), [
                 "[nombre del cliente]": nombre,
                 "[macropesos]": Dinero.texto(macro),
                 "[linea de crédito]": linea,
                 "[linea de credito]": linea,
                 "[enganche]": enganche,
-                "[equipo]": extras.equipo,
-                "[tipo de producto]": producto,
-                "[modelo]": extras.modelo,
+                "[producto]": extras.producto,
             ])
         }
         return armar(saludo: plantilla.saludo, lugar: plantilla.lugar, nombre: nombre, cuerpos: [preparar(plantilla.cuerpo), preparar(extra)])

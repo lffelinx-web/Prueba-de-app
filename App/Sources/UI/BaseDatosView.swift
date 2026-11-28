@@ -420,7 +420,7 @@ struct FilaCliente: View {
             case .sinrenovar?:
                 datos(c.sl, izquierda: c.asesor ?? "Sin asesor", derecha: "Vence \(Fecha.corta(c.fechaFin))")
                 if let pr = Reglas.prAdjuntaActiva(c) {
-                    Text("📋 \(pr["numPR"]?.text ?? "—") · \(pr["tipocred"]?.text ?? "—")")
+                    Text("📋 \(pr["numPR"]?.text ?? "—")")
                         .font(Tipo.detalle.monospaced())
                         .foregroundStyle(Tema.apagado)
                 }
@@ -430,7 +430,7 @@ struct FilaCliente: View {
                 }
             case .prAprobadas?, .prRechazadas?:
                 let restantes = diasRestantesPR(c)
-                datos(c.numPR, izquierda: "\(c.asesor ?? "—") · \(c.tipocred ?? "—")", derecha: "\(restantes) días", colorDerecha: restantes <= 5 ? Tema.peligro : Tema.apagado)
+                datos(c.numPR, izquierda: c.asesor ?? "—", derecha: "\(restantes) días", colorDerecha: restantes <= 5 ? Tema.peligro : Tema.apagado)
                 if let detalles = c.detallesPR {
                     Text(detalles).font(Tipo.detalle).foregroundStyle(Tema.apagado).lineLimit(2)
                 }
@@ -555,10 +555,6 @@ struct FiltrosView: View {
                     }
                     rango("Fecha ref.", desde: $borrador.fechaDesde, hasta: $borrador.fechaHasta)
                 case .prAprobadas:
-                    Picker("Tipo", selection: $borrador.tipocred) {
-                        Text("Todos").tag("")
-                        ForEach(Catalogos.tiposPR, id: \.self) { Text($0).tag($0) }
-                    }
                     rango("Fecha solicitud", desde: $borrador.fechaDesde, hasta: $borrador.fechaHasta)
                 default:
                     Picker("Tipo de crédito", selection: $borrador.tipo) {

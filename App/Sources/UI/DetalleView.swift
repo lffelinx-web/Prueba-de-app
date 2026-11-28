@@ -336,7 +336,6 @@ struct DetalleView: View {
                     campo("Verificado", c.verificado ? "Sí" : "No")
                 case .prAprobadas?, .prRechazadas?:
                     campo("N° PR", c.numPR, mono: true)
-                    campo("Tipo", c.tipocred)
                     campo("Asesor", c.asesor)
                     campo("Solicitud", Fecha.corta(c.fechaSolicitud))
                 case nil:
@@ -402,7 +401,6 @@ struct DetalleView: View {
             }) {
                 LazyVGrid(columns: columnas, alignment: .leading, spacing: 12) {
                     campo("N° PR", pr["numPR"]?.text, mono: true)
-                    campo("Tipo", pr["tipocred"]?.text)
                     campo("Asesor", pr["asesor"]?.text)
                     campo("Solicitud", Fecha.corta(pr["fechaSolicitud"]?.text))
                 }

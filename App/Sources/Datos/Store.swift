@@ -71,8 +71,10 @@ final class Store: ObservableObject {
     @Published private(set) var pinCargado = false
     @Published private(set) var plantillasRecordatorio: [String: JSON] = [:]
     @Published private(set) var mensajesPredeterminados: [String: JSON] = [:]
-    @Published private(set) var catalogoCelulares: [String: [String]] = [:]
+    /// Plain categories (iPhone, Bicis, Motos, Accesorios).
     @Published private(set) var catalogoProductos: [String: [JSON]] = [:]
+    /// Celulares and Pantallas: brand → models.
+    @Published private(set) var catalogoMarcas: [String: [String: [String]]] = [:]
     @Published private(set) var diasBloqueo = Envios.DiasBloqueo()
     /// Key under `ca_users` and `_rev` of each user record, for targeted updates.
     private(set) var clavesUsuarios: [String: String] = [:]
@@ -141,8 +143,8 @@ final class Store: ObservableObject {
         pinCargado = false
         plantillasRecordatorio = [:]
         mensajesPredeterminados = [:]
-        catalogoCelulares = [:]
         catalogoProductos = [:]
+        catalogoMarcas = [:]
         diasBloqueo = Envios.DiasBloqueo()
         errorLogin = mensaje
         fase = .login
@@ -266,17 +268,10 @@ final class Store: ObservableObject {
         escuchar("ca_mensajes_pred/\(usuarioId)") { [weak self] snap in
             self?.mensajesPredeterminados = JSON(firebase: snap.value).object ?? [:]
         }
-        escuchar("ca_catalogo_celulares") { [weak self] snap in
-            var catalogo: [String: [String]] = [:]
-            for (marca, modelos) in JSON(firebase: snap.value).object ?? [:] {
-                catalogo[marca] = (modelos.list ?? []).compactMap { $0["nombre"]?.text ?? $0.text }
-            }
-            self?.catalogoCelulares = catalogo
-        }
         escuchar("ca_catalogo_productos") { [weak self] snap in
-            var catalogo = (JSON(firebase: snap.value).object ?? [:]).mapValues { $0.list ?? [] }
-            for categoria in Store.categoriasProducto where catalogo[categoria] == nil { catalogo[categoria] = [] }
-            self?.catalogoProductos = catalogo
+            let datos = Catalogo.leer(JSON(firebase: snap.value))
+            self?.catalogoProductos = datos.planos
+            self?.catalogoMarcas = datos.marcas
         }
 
         raiz.child("ca_pins").child(usuarioId).observeSingleEvent(of: .value) { [weak self] snap in
@@ -487,7 +482,6 @@ final class Store: ObservableObject {
 
     // MARK: - Templates and catalogues
 
-    static let categoriasProducto = ["iPhone", "Pantallas", "Bicis", "Motos", "Accesorios"]
 
     /// The user's reminder template, or nil when it has not been written yet.
     func plantillaRecordatorio(_ tipo: TipoRecordatorio) -> PlantillaRecordatorio? {
@@ -532,7 +526,12 @@ final class Store: ObservableObject {
         }
     }
 
-    func modelos(de categoria: String) -> [String] {
-        (catalogoProductos[categoria] ?? []).compactMap { $0["nombre"]?.text ?? $0.text }
+    func modelos(de categoria: String, marca: String = "") -> [String] {
+        if Catalogo.conMarca.contains(categoria) { return catalogoMarcas[categoria]?[marca] ?? [] }
+        return (catalogoProductos[categoria] ?? []).compactMap { $0["nombre"]?.text ?? $0.text }
+    }
+
+    func marcas(de categoria: String) -> [String] {
+        (catalogoMarcas[categoria] ?? [:]).keys.sorted { $0.localizedCompare($1) == .orderedAscending }
     }
 }

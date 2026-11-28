@@ -21,7 +21,6 @@ struct DatosPR {
     var numPR = "PR"
     var asesor = ""
     var fechaSolicitud = Fecha.hoyISO
-    var tipocred = ""
     var detalles = ""
 }
 
@@ -123,7 +122,6 @@ extension Store {
         if d.numPR.range(of: #"^PR\d{12}$"#, options: .regularExpression) == nil { return .error("PR: PR + 12 dígitos.") }
         if d.asesor.isEmpty { return .error("Selecciona el asesor.") }
         if d.fechaSolicitud.isEmpty { return .error("La fecha de solicitud es requerida.") }
-        if d.tipocred.isEmpty { return .error("Selecciona el tipo (Financing o Créditos).") }
         if d.id == nil, !asesorValidoParaAlta(d.asesor) { return .error("Selecciona un asesor disponible para nuevas altas.") }
 
         if d.id == nil {
@@ -158,7 +156,6 @@ extension Store {
         obj["numPR"] = .string(d.numPR)
         obj["asesor"] = .string(d.asesor)
         obj["fechaSolicitud"] = .string(d.fechaSolicitud)
-        obj["tipocred"] = .string(d.tipocred)
         obj["detallesPR"] = .string(d.detalles)
         obj.categoria = d.categoria
         obj.pagosConfirmados = []
@@ -177,7 +174,6 @@ extension Store {
             "numPR": .string(d.numPR),
             "asesor": .string(d.asesor),
             "fechaSolicitud": .string(d.fechaSolicitud),
-            "tipocred": .string(d.tipocred),
             "detallesPR": .string(d.detalles),
             "estatus": .string(d.categoria == .prAprobadas ? "aprobada" : "rechazada"),
             "fechaIngresoPR": .string(Fecha.hoyISO),

@@ -70,9 +70,12 @@ struct NotificacionesView: View {
             if n.tipo == "vencido_a_sinrenovar", let cliente, cliente.categoria == .activos, store.esAdmin {
                 HStack {
                     Button("Confirmar") {
+                        let doble = Reglas.tieneCreditoVinculadoActivo(cliente, en: store.clientes)
                         confirmacion = Confirmacion(
                             titulo: "Confirmar fin de crédito",
-                            mensaje: "¿Confirmas que el crédito de \(cliente.nombre) ya finalizó? Pasará a Sin renovar.",
+                            mensaje: doble
+                                ? "¿Confirmas que el crédito \(cliente.sl ?? "") de \(cliente.nombre) ya finalizó? Pasará al historial de su otro crédito activo."
+                                : "¿Confirmas que el crédito de \(cliente.nombre) ya finalizó? Pasará a Sin renovar.",
                             boton: "Sí, finalizar"
                         ) { await store.confirmarPaseSinRenovar(notificacion: n.id, clienteId: cliente.id) }
                     }
